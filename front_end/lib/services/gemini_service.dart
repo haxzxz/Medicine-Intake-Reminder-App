@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../models/reminder.dart';
+import 'auth_service.dart';
 
 class ZamResponse {
   final String message;
@@ -54,6 +55,12 @@ class ClaudeService {
 
   static String get _model => dotenv.env['GEMINI_MODEL'] ?? 'gemini-2.0-flash';
 
+  static String get _backendUrl {
+    final raw = dotenv.env['BACKEND_URL']?.trim() ?? '';
+    if (raw.endsWith('/')) return raw.substring(0, raw.length - 1);
+    return raw;
+  }
+
   static String get _url =>
       'https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent?key=$_apiKey';
 
@@ -65,9 +72,6 @@ class ClaudeService {
   // Queue: only ONE request in flight at a time
   bool _requestInFlight = false;
   final List<_QueuedRequest> _queue = [];
-
-  // No automatic retry: one user send should mean one Gemini request.
-  static const int _maxRetries = 0;
 
   // Conversation history — trimmed to last 8 turns to save tokens
   final List<Map<String, dynamic>> _history = [];
@@ -199,32 +203,20 @@ PERSONALITY: casual, warm, brief. Don't repeat reminder details (the card shows 
     });
   }
 
-  // ── Retry with exponential backoff ─────────────────────────────────────────
+  // ── One request only ───────────────────────────────────────────────────────
 
   Future<ZamResponse> _executeWithRetry(_QueuedRequest req) async {
-    for (int attempt = 0; attempt <= _maxRetries; attempt++) {
-      if (attempt > 0) {
-        break;
-      }
-
-      final res = await _doRequest(req);
-
-      final isRateLimit = res.error != null &&
-          (res.error!.contains('429') ||
-              res.error!.toLowerCase().contains('quota') ||
-              res.error!.toLowerCase().contains('rate'));
-
-      if (!isRateLimit) return res;
-
-      return res;
-    }
-    return ZamResponse.error("Unexpected retry failure");
+    return _doRequest(req);
   }
 
   // ── Single HTTP request ────────────────────────────────────────────────────
 
   Future<ZamResponse> _doRequest(_QueuedRequest req) async {
     _lastRequestTime = DateTime.now();
+
+    if (_backendUrl.isNotEmpty) {
+      return _doBackendRequest(req);
+    }
 
     if (_apiKey.isEmpty) {
       return ZamResponse.error(
@@ -301,23 +293,7 @@ PERSONALITY: casual, warm, brief. Don't repeat reminder details (the card shows 
         final clean = rawText.replaceAll(RegExp(r'```json|```'), '').trim();
         final parsed = jsonDecode(clean) as Map<String, dynamic>;
 
-        ReminderIntent? intent;
-        if (parsed['reminder'] != null) {
-          intent = ReminderIntent.fromJson(
-            parsed['reminder'] as Map<String, dynamic>,
-          );
-        }
-
-        final rawSuggestions = parsed['suggestions'];
-        final suggestions =
-            rawSuggestions is List ? rawSuggestions.cast<String>() : <String>[];
-
-        return ZamResponse(
-          message: parsed['message'] as String? ?? rawText,
-          action: parsed['action'] as String?,
-          reminder: intent,
-          suggestions: suggestions,
-        );
+        return _parseZamResponse(parsed, fallbackMessage: rawText);
       } catch (e) {
         debugPrint('JSON parse error: $e\nRaw: $rawText');
         return ZamResponse(message: rawText);
@@ -335,6 +311,67 @@ PERSONALITY: casual, warm, brief. Don't repeat reminder details (the card shows 
   }
 
   // ── Trim history ───────────────────────────────────────────────────────────
+
+  Future<ZamResponse> _doBackendRequest(_QueuedRequest req) async {
+    try {
+      final headers = {'Content-Type': 'application/json'};
+      final token = await AuthService.getIdToken();
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
+      final response = await http
+          .post(
+            Uri.parse('$_backendUrl/api/chat'),
+            headers: headers,
+            body: jsonEncode({
+              'userMessage': req.userMessage,
+              'reminders': req.reminders.map((r) => r.toJson()).toList(),
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      final parsed = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return ZamResponse.error(
+          parsed['message'] as String? ??
+              'Backend error ${response.statusCode}',
+        );
+      }
+      return _parseZamResponse(parsed);
+    } on TimeoutException {
+      return ZamResponse.error('Backend timed out. Check your connection.');
+    } catch (e) {
+      debugPrint('Backend chat error: $e');
+      return ZamResponse.error(
+        'Could not reach the backend. Check your connection.',
+      );
+    }
+  }
+
+  ZamResponse _parseZamResponse(
+    Map<String, dynamic> parsed, {
+    String fallbackMessage = '',
+  }) {
+    ReminderIntent? intent;
+    if (parsed['reminder'] != null) {
+      intent = ReminderIntent.fromJson(
+        parsed['reminder'] as Map<String, dynamic>,
+      );
+    }
+
+    final rawSuggestions = parsed['suggestions'];
+    final suggestions =
+        rawSuggestions is List ? rawSuggestions.cast<String>() : <String>[];
+
+    return ZamResponse(
+      message: parsed['message'] as String? ?? fallbackMessage,
+      action: parsed['action'] as String?,
+      reminder: intent,
+      suggestions: suggestions,
+      error: parsed['error'] as String?,
+    );
+  }
 
   void _trimHistory() {
     final maxMessages = _maxHistoryTurns * 2;

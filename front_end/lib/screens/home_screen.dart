@@ -5,7 +5,8 @@ import 'dart:async';
 import '../models/reminder.dart';
 import '../models/reminder_log.dart';
 import '../services/auth_service.dart';
-import '../services/claude_service.dart';
+import '../services/backend_service.dart';
+import '../services/gemini_service.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/chat_bubble.dart';
@@ -78,9 +79,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadData() async {
     // API key comes entirely from .env — no UI input needed
     final saved = await StorageService.loadReminders();
+    final remote = await BackendService.loadReminders();
+    final byId = {for (final reminder in saved) reminder.id: reminder};
+    for (final reminder in remote) {
+      byId[reminder.id] = reminder;
+    }
+    final merged = byId.values.toList();
     final active = <Reminder>[];
 
-    for (final r in saved) {
+    for (final r in merged) {
       if (r.isPast && !r.fired) {
         await _logReminder(r, 'missed');
         if (r.isRecurring) {
@@ -106,6 +113,8 @@ class _HomeScreenState extends State<HomeScreen> {
             _reminders.map((r) => r.id).reduce((a, b) => a > b ? a : b) + 1;
       }
     });
+    await StorageService.saveReminders(_reminders);
+    unawaited(BackendService.syncReminders(_reminders));
   }
 
   void _startCountdown() {
@@ -133,7 +142,10 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
       _safeSetState(() {});
-      if (changed) StorageService.saveReminders(_reminders);
+      if (changed) {
+        StorageService.saveReminders(_reminders);
+        unawaited(BackendService.syncReminders(_reminders));
+      }
     });
   }
 
@@ -205,6 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _reminders.add(newReminder);
       await _scheduleReminder(newReminder);
       await StorageService.saveReminders(_reminders);
+      unawaited(BackendService.upsertReminder(newReminder));
     } else if (res.action == 'delete_reminder') {
       final reminder = _findReminderByName(res.reminder?.name);
       if (reminder == null) {
@@ -234,6 +247,7 @@ class _HomeScreenState extends State<HomeScreen> {
       await NotificationService.cancelAll();
       _reminders.clear();
       await StorageService.clearReminders();
+      unawaited(BackendService.deleteAllReminders());
     }
 
     _safeSetState(() => _isLoading = false);
@@ -276,16 +290,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _logReminder(Reminder r, String status) {
-    return StorageService.appendLog(
-      ReminderLog(
-        reminderId: r.id,
-        medicineName: r.medicineName,
-        scheduledTime: r.time,
-        firedAt: DateTime.now(),
-        status: status,
-      ),
+  Future<void> _logReminder(Reminder r, String status) async {
+    final log = ReminderLog(
+      reminderId: r.id,
+      medicineName: r.medicineName,
+      scheduledTime: r.time,
+      firedAt: DateTime.now(),
+      status: status,
     );
+    await StorageService.appendLog(log);
+    unawaited(BackendService.appendLog(log));
   }
 
   Reminder? _findReminderByName(String? name) {
@@ -319,6 +333,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _safeSetState(() => _reminders[index] = next);
     await _scheduleReminder(next);
     await StorageService.saveReminders(_reminders);
+    unawaited(BackendService.upsertReminder(next));
   }
 
   Future<void> _toggleListening() async {
@@ -363,6 +378,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await NotificationService.cancelReminder(r.id);
     _safeSetState(() => _reminders.remove(r));
     await StorageService.saveReminders(_reminders);
+    unawaited(BackendService.deleteReminder(r.id));
     if (showMessage) _addBotMessage('Deleted ${r.medicineName}.');
   }
 

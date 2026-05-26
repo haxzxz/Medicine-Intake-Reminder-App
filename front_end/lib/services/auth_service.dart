@@ -52,4 +52,10 @@ class AuthService {
       currentUser?.displayName ?? currentUser?.email ?? 'User';
 
   static String? get photoUrl => currentUser?.photoURL;
+
+  static Future<String?> getIdToken() async {
+    final user = currentUser;
+    if (user == null) return null;
+    return user.getIdToken();
+  }
 }
