@@ -20,11 +20,14 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _inputCtrl = TextEditingController();
   final ScrollController _scrollCtrl = ScrollController();
   final SpeechToText _speech = SpeechToText();
   final ClaudeService _claude = ClaudeService();
+  late final AnimationController _micPulseCtrl;
+  late final Animation<double> _micScale;
 
   final List<Map<String, dynamic>> _messages = [];
   final List<Reminder> _reminders = [];
@@ -35,6 +38,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _speechAvailable = false;
   bool _isLoading = false;
   bool _disposed = false;
+  bool _isHoldingMic = false;
+  String _voiceFinalText = '';
+  String _voicePartialText = '';
   DateTime? _lastSendTime;
   int _nextId = 1;
   final Set<int> _pendingConfirmations = {};
@@ -49,6 +55,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _micPulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 720),
+    );
+    _micScale = Tween<double>(begin: 1, end: 1.18).animate(
+      CurvedAnimation(parent: _micPulseCtrl, curve: Curves.easeInOut),
+    );
     _init();
   }
 
@@ -68,7 +81,15 @@ class _HomeScreenState extends State<HomeScreen> {
         onError: (e) => debugPrint('Speech error: ${e.errorMsg}'),
         onStatus: (s) {
           if (s == 'done' || s == 'notListening') {
-            _safeSetState(() => _isListening = false);
+            if (_isHoldingMic && !_disposed) {
+              Future.delayed(const Duration(milliseconds: 180), () {
+                if (_isHoldingMic && !_disposed) {
+                  unawaited(_listenForSpeechSegment());
+                }
+              });
+            } else {
+              _setListening(false);
+            }
           }
         },
       );
@@ -185,6 +206,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _inputCtrl.clear();
 
     _addUserMessage(text);
+
+    if (_isReminderStatusQuestion(text)) {
+      _addBotMessage(_activeReminderSummary());
+      return;
+    }
+
     _safeSetState(() => _isLoading = true);
 
     // Key comes from .env via ClaudeService — no UI dialog needed
@@ -193,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Reminder? newReminder;
     if (res.action == 'set_reminder' && res.reminder != null) {
       final intent = res.reminder!;
-      final time = _parseTime(intent.time);
+      final time = _parseReminderTime(intent, text);
       newReminder = Reminder(
         id: _nextId++,
         medicineName: intent.name,
@@ -204,6 +231,7 @@ class _HomeScreenState extends State<HomeScreen> {
       await _scheduleReminder(newReminder);
       await StorageService.saveReminders(_reminders);
       unawaited(BackendService.upsertReminder(newReminder));
+      _claude.clearHistory();
     } else if (res.action == 'delete_reminder') {
       final reminder = _findReminderByName(res.reminder?.name);
       if (reminder == null) {
@@ -234,6 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _reminders.clear();
       await StorageService.clearReminders();
       unawaited(BackendService.deleteAllReminders());
+      _claude.clearHistory();
     }
 
     _safeSetState(() => _isLoading = false);
@@ -242,6 +271,49 @@ class _HomeScreenState extends State<HomeScreen> {
       reminder: newReminder,
       suggestions: res.suggestions.isNotEmpty ? res.suggestions : null,
     );
+  }
+
+  DateTime _parseReminderTime(ReminderIntent intent, String sourceText) {
+    final delay = intent.delayMinutes ?? _relativeDelayFromText(sourceText);
+    if (delay != null && delay > 0) {
+      return DateTime.now().add(Duration(minutes: delay));
+    }
+    return _parseTime(intent.time);
+  }
+
+  bool _isReminderStatusQuestion(String text) {
+    final normalized = text.toLowerCase();
+    return RegExp(
+          r'\b(what|check|show|list|view|see)\b.*\b(reminder|reminders|meds|medicine|medicines)\b',
+        ).hasMatch(normalized) ||
+        RegExp(r'\b(my|active|upcoming)\s+(reminder|reminders|meds|medicine|medicines)\b')
+            .hasMatch(normalized) ||
+        normalized.contains('what do i have set');
+  }
+
+  String _activeReminderSummary() {
+    final active = _reminders.where((r) => !r.fired).toList()
+      ..sort((a, b) => a.time.compareTo(b.time));
+    if (active.isEmpty) {
+      return "You don't have any active reminders right now. Completed or missed medicine intakes are in your reminder history.";
+    }
+
+    final fmt = DateFormat('h:mm a');
+    final lines = active.map((r) {
+      final status = r.isPast ? 'due now' : r.timeUntilLabel;
+      final recurrence = r.isRecurring ? ', ${r.recurrence}' : '';
+      return '• ${r.medicineName} at ${fmt.format(r.time)} ($status$recurrence)';
+    }).join('\n');
+    return 'Here are your active reminders:\n$lines';
+  }
+
+  int? _relativeDelayFromText(String text) {
+    final match = RegExp(
+      r'\b(?:in|after|for)\s+(\d{1,3})\s*(?:m|min|mins|minute|minutes)\b',
+      caseSensitive: false,
+    ).firstMatch(text);
+    if (match == null) return null;
+    return int.tryParse(match.group(1)!);
   }
 
   DateTime _parseTime(String hhmm) {
@@ -326,6 +398,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (action == 'snooze') {
       await _snoozeReminder(_reminders[index], minutes: 10);
+      _claude.clearHistory();
       _addBotMessage('Snoozed ${r.medicineName} for 10 minutes.');
       return;
     }
@@ -338,10 +411,14 @@ class _HomeScreenState extends State<HomeScreen> {
       await _scheduleReminder(next);
       unawaited(BackendService.upsertReminder(next));
     } else {
-      _safeSetState(() => _reminders[index].fired = true);
+      final completed = _reminders[index];
+      completed.fired = true;
+      _safeSetState(() => _reminders.removeAt(index));
+      unawaited(BackendService.deleteReminder(completed.id));
     }
     await StorageService.saveReminders(_reminders);
     unawaited(BackendService.syncReminders(_reminders));
+    _claude.clearHistory();
     _addBotMessage(
       action == 'taken'
           ? 'Logged ${r.medicineName} as taken.'
@@ -381,35 +458,94 @@ class _HomeScreenState extends State<HomeScreen> {
     await _scheduleReminder(next);
     await StorageService.saveReminders(_reminders);
     unawaited(BackendService.upsertReminder(next));
+    _claude.clearHistory();
   }
 
-  Future<void> _toggleListening() async {
+  void _setListening(bool value) {
+    if (value == _isListening) return;
+    _safeSetState(() => _isListening = value);
+    if (value) {
+      _micPulseCtrl.repeat(reverse: true);
+    } else {
+      _micPulseCtrl.stop();
+      _micPulseCtrl.reset();
+    }
+  }
+
+  Future<void> _startListening() async {
     if (!_speechAvailable) {
       _addBotMessage(
         "Microphone isn't available. Check mic permissions in Settings.",
       );
       return;
     }
-    if (_isListening) {
-      await _speech.stop();
-      _safeSetState(() => _isListening = false);
-      return;
-    }
-    _safeSetState(() => _isListening = true);
+    if (_isListening) return;
+    _isHoldingMic = true;
+    _voiceFinalText = '';
+    _voicePartialText = '';
+    _setListening(true);
+    await _listenForSpeechSegment();
+  }
+
+  Future<void> _listenForSpeechSegment() async {
+    if (!_speechAvailable || !_isHoldingMic || _disposed) return;
+    if (_speech.isListening) return;
     await _speech.listen(
       onResult: (result) {
-        if (result.finalResult && result.recognizedWords.isNotEmpty) {
-          _safeSetState(() => _isListening = false);
-          _send(result.recognizedWords);
-        } else if (!result.finalResult) {
-          _safeSetState(() => _inputCtrl.text = result.recognizedWords);
+        if (result.recognizedWords.isNotEmpty) {
+          _captureSpeechResult(result.recognizedWords, result.finalResult);
         }
       },
       localeId: 'en_US',
-      listenFor: const Duration(seconds: 20),
-      pauseFor: const Duration(seconds: 4),
+      listenFor: const Duration(seconds: 60),
+      pauseFor: const Duration(seconds: 8),
+      partialResults: true,
       cancelOnError: true,
     );
+  }
+
+  Future<void> _stopListening({required bool send}) async {
+    if (!_isListening && !_isHoldingMic) return;
+    _isHoldingMic = false;
+    await _speech.stop();
+    _setListening(false);
+    final text = _mergedVoiceText().trim();
+    _voiceFinalText = '';
+    _voicePartialText = '';
+    if (send && text.isNotEmpty) {
+      await _send(text);
+    }
+  }
+
+  void _captureSpeechResult(String words, bool isFinal) {
+    final cleaned = words.trim();
+    if (cleaned.isEmpty) return;
+    if (isFinal) {
+      if (!_voiceFinalText.toLowerCase().endsWith(cleaned.toLowerCase())) {
+        _voiceFinalText = _joinVoiceText(_voiceFinalText, cleaned);
+      }
+      _voicePartialText = '';
+    } else {
+      _voicePartialText = cleaned;
+    }
+    _safeSetState(() => _inputCtrl.text = _mergedVoiceText());
+  }
+
+  String _mergedVoiceText() {
+    if (_voicePartialText.isEmpty) return _voiceFinalText.trim();
+    if (_voiceFinalText.isEmpty) return _voicePartialText.trim();
+    final finalLower = _voiceFinalText.toLowerCase();
+    final partialLower = _voicePartialText.toLowerCase();
+    if (finalLower.endsWith(partialLower)) return _voiceFinalText.trim();
+    return _joinVoiceText(_voiceFinalText, _voicePartialText).trim();
+  }
+
+  String _joinVoiceText(String first, String second) {
+    final a = first.trim();
+    final b = second.trim();
+    if (a.isEmpty) return b;
+    if (b.isEmpty) return a;
+    return '$a $b';
   }
 
   Future<void> _deleteReminder(Reminder r) async {
@@ -426,6 +562,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _safeSetState(() => _reminders.remove(r));
     await StorageService.saveReminders(_reminders);
     unawaited(BackendService.deleteReminder(r.id));
+    _claude.clearHistory();
     if (showMessage) _addBotMessage('Deleted ${r.medicineName}.');
   }
 
@@ -466,6 +603,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _countdownTimer?.cancel();
     _inputCtrl.dispose();
     _scrollCtrl.dispose();
+    _micPulseCtrl.dispose();
+    _isHoldingMic = false;
     if (_isListening) _speech.stop();
     super.dispose();
   }
@@ -794,12 +933,12 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(width: 10),
           const Expanded(
             child: Text(
-              'Listening... speak now',
+              'Listening... release mic to send',
               style: TextStyle(color: Color(0xFFE65100), fontSize: 13),
             ),
           ),
           GestureDetector(
-            onTap: _toggleListening,
+            onTap: () => _stopListening(send: false),
             child: const Text(
               'Cancel',
               style: TextStyle(
@@ -857,32 +996,51 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // Mic button
           GestureDetector(
-            onTap: _toggleListening,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _isListening
-                    ? const Color(0xFFFFF3E0)
-                    : scheme.surfaceContainerHighest,
-                border: Border.all(
+            onTap: _speechAvailable
+                ? null
+                : () => _addBotMessage(
+                      "Microphone isn't available. Check mic permissions in Settings.",
+                    ),
+            onLongPressStart: (_) => _startListening(),
+            onLongPressEnd: (_) => _stopListening(send: true),
+            onLongPressCancel: () => _stopListening(send: false),
+            child: ScaleTransition(
+              scale: _micScale,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _isListening
+                      ? const Color(0xFFFFF3E0)
+                      : scheme.surfaceContainerHighest,
+                  border: Border.all(
+                    color: _isListening
+                        ? const Color(0xFFE65100)
+                        : scheme.outlineVariant.withOpacity(0.4),
+                  ),
+                  boxShadow: _isListening
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFFE65100).withOpacity(0.25),
+                            blurRadius: 18,
+                            spreadRadius: 3,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Icon(
+                  _isListening
+                      ? Icons.mic
+                      : (_speechAvailable ? Icons.mic_none : Icons.mic_off),
+                  size: 20,
                   color: _isListening
                       ? const Color(0xFFE65100)
-                      : scheme.outlineVariant.withOpacity(0.4),
+                      : _speechAvailable
+                          ? scheme.onSurface.withOpacity(0.6)
+                          : scheme.onSurface.withOpacity(0.3),
                 ),
-              ),
-              child: Icon(
-                _isListening
-                    ? Icons.mic
-                    : (_speechAvailable ? Icons.mic_none : Icons.mic_off),
-                size: 20,
-                color: _isListening
-                    ? const Color(0xFFE65100)
-                    : _speechAvailable
-                        ? scheme.onSurface.withOpacity(0.6)
-                        : scheme.onSurface.withOpacity(0.3),
               ),
             ),
           ),

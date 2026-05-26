@@ -1,3 +1,4 @@
+import base64
 from datetime import datetime, timezone
 import json
 
@@ -206,6 +207,8 @@ def create_app():
 def _get_or_create_user(app):
     token = _bearer_token()
     profile = _verify_firebase_token(token) if token else None
+    if profile is None and token and not app.config["FIREBASE_AUTH_REQUIRED"]:
+        profile = _decode_unverified_firebase_token(token)
 
     if app.config["FIREBASE_AUTH_REQUIRED"] and not profile:
         return _abort_json("Valid Firebase bearer token is required", 401)
@@ -245,6 +248,25 @@ def _verify_firebase_token(token):
             except ValueError:
                 firebase_admin.initialize_app(credentials.ApplicationDefault())
         return auth.verify_id_token(token)
+    except Exception:
+        return None
+
+
+def _decode_unverified_firebase_token(token):
+    try:
+        payload = token.split(".")[1]
+        padding = "=" * (-len(payload) % 4)
+        decoded = base64.urlsafe_b64decode(payload + padding)
+        data = json.loads(decoded)
+        uid = data.get("user_id") or data.get("sub")
+        if not uid:
+            return None
+        return {
+            "uid": uid,
+            "email": data.get("email"),
+            "name": data.get("name"),
+            "picture": data.get("picture"),
+        }
     except Exception:
         return None
 
@@ -300,7 +322,8 @@ def _system_prompt(reminders):
         active = "\n".join(
             [
                 f"- id {item.get('id')}: {item.get('medicineName')} at {item.get('time')} "
-                f"(repeats {item.get('recurrence', 'none')})"
+                f"(status {'taken/completed' if item.get('fired') else 'pending'}, "
+                f"repeats {item.get('recurrence', 'none')})"
                 for item in reminders
             ]
         )
@@ -309,6 +332,11 @@ def _system_prompt(reminders):
 
 ACTIVE REMINDERS:
 {active}
+
+IMPORTANT STATE RULE:
+- ACTIVE REMINDERS is the source of truth. If it says None, tell the user they have no active reminders.
+- Ignore older conversation messages that imply a reminder is still active when ACTIVE REMINDERS no longer lists it.
+- Completed/taken/missed reminders are history, not active reminders.
 
 Return ONLY valid JSON:
 {{
@@ -319,15 +347,18 @@ Return ONLY valid JSON:
 }}
 
 Supported actions:
-- set_reminder with reminder {{ "name": "Medicine Name", "time": "HH:MM", "recurrence": "none|daily|weekly" }}
+- set_reminder at a clock time with reminder {{ "name": "Medicine Name", "time": "HH:MM", "recurrence": "none|daily|weekly" }}
+- set_reminder after a relative delay with reminder {{ "name": "Medicine Name", "time": "00:00", "delayMinutes": 1, "recurrence": "none" }}
 - delete_reminder with reminder {{ "name": "Medicine Name", "time": "00:00", "recurrence": "none" }}
 - snooze_reminder with reminder {{ "name": "Medicine Name", "time": "00:00", "recurrence": "none", "snoozeMinutes": 10 }}
 - delete_all
 
 Time rules:
 - Always output 24-hour HH:MM.
+- For "in X minute(s)" or "after X minute(s)", ALWAYS use delayMinutes instead of rounding to HH:MM.
 - Bare 1-6 usually means PM. Bare 7-11 prefers AM unless context says PM.
 - tonight/evening/pm means PM. morning means 08:00. bedtime/night means 21:00.
+- When checking reminders, list only pending/due reminders as active. Do not call taken/completed reminders set.
 
 Recurrence rules:
 - every day/daily/each morning/night means daily.

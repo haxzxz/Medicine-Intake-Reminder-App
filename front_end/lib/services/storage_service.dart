@@ -2,17 +2,25 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/reminder.dart';
 import '../models/reminder_log.dart';
+import 'auth_service.dart';
 
 class StorageService {
   static const String _remindersKey = 'zam_reminders_v2';
   static const String _logsKey = 'zam_reminder_logs_v1';
+
+  static String get _userScope {
+    final user = AuthService.currentUser;
+    return user?.uid ?? user?.email ?? 'signed_out';
+  }
+
+  static String _scopedKey(String key) => '${key}_$_userScope';
 
   // ── Reminders ──────────────────────────────────────────────────────────────
 
   static Future<List<Reminder>> loadReminders() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_remindersKey);
+      final raw = prefs.getString(_scopedKey(_remindersKey));
       if (raw == null) return [];
       final List<dynamic> decoded = jsonDecode(raw);
       return decoded
@@ -27,7 +35,7 @@ class StorageService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
-        _remindersKey,
+        _scopedKey(_remindersKey),
         jsonEncode(reminders.map((r) => r.toJson()).toList()),
       );
     } catch (_) {}
@@ -35,7 +43,7 @@ class StorageService {
 
   static Future<void> clearReminders() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_remindersKey);
+    await prefs.remove(_scopedKey(_remindersKey));
   }
 
   // ── Reminder Logs ──────────────────────────────────────────────────────────
@@ -43,7 +51,7 @@ class StorageService {
   static Future<List<ReminderLog>> loadLogs() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_logsKey);
+      final raw = prefs.getString(_scopedKey(_logsKey));
       if (raw == null) return [];
       final List<dynamic> decoded = jsonDecode(raw);
       return decoded
@@ -61,13 +69,13 @@ class StorageService {
     final trimmed = logs.length > 200 ? logs.sublist(logs.length - 200) : logs;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
-      _logsKey,
+      _scopedKey(_logsKey),
       jsonEncode(trimmed.map((l) => l.toJson()).toList()),
     );
   }
 
   static Future<void> clearLogs() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_logsKey);
+    await prefs.remove(_scopedKey(_logsKey));
   }
 }

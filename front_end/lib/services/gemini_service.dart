@@ -31,12 +31,14 @@ class ReminderIntent {
   final String time;
   final String recurrence;
   final int? snoozeMinutes;
+  final int? delayMinutes;
 
   const ReminderIntent({
     required this.name,
     required this.time,
     this.recurrence = 'none',
     this.snoozeMinutes,
+    this.delayMinutes,
   });
 
   factory ReminderIntent.fromJson(Map<String, dynamic> json) {
@@ -46,6 +48,9 @@ class ReminderIntent {
       time: json['time'] as String? ?? '08:00',
       recurrence: json['recurrence'] as String? ?? 'none',
       snoozeMinutes: rawSnooze is num ? rawSnooze.round() : null,
+      delayMinutes: json['delayMinutes'] is num
+          ? (json['delayMinutes'] as num).round()
+          : null,
     );
   }
 }
@@ -86,18 +91,27 @@ class ClaudeService {
 
     final activeReminders = reminders.isEmpty
         ? 'None'
-        : reminders
-            .map(
-              (r) =>
-                  '- id ${r.id}: ${r.medicineName} at ${timeFmt.format(r.time)} (${r.timeUntilLabel}, repeats ${r.recurrence})',
-            )
-            .join('\n');
+        : reminders.map(
+            (r) {
+              final status = r.fired
+                  ? 'taken/completed'
+                  : r.isPast
+                      ? 'due now'
+                      : 'pending';
+              return '- id ${r.id}: ${r.medicineName} at ${timeFmt.format(r.time)} (${r.timeUntilLabel}, status $status, repeats ${r.recurrence})';
+            },
+          ).join('\n');
 
     return '''You are Zam, a warm, smart, casual AI medicine reminder assistant.
 Today is ${dateFmt.format(now)}, current time is ${timeFmt.format(now)}.
 
 ACTIVE REMINDERS:
 $activeReminders
+
+IMPORTANT STATE RULE:
+- ACTIVE REMINDERS is the source of truth. If it says None, tell the user they have no active reminders.
+- Ignore older conversation messages that imply a reminder is still active when ACTIVE REMINDERS no longer lists it.
+- Completed/taken/missed reminders are history, not active reminders.
 
 YOUR CAPABILITIES:
 1. SET REMINDERS — understand casual language: "pills 8ish", "meds tonite 9", "biogesic 7pm", "metformin daily at 8"
@@ -113,8 +127,11 @@ RESPONSE FORMAT — respond ONLY with valid JSON, no markdown, no backticks:
   "suggestions": ["chip 1", "chip 2", "chip 3"]
 }
 
-To set a reminder:
+To set a reminder at a clock time:
 { "message": "...", "action": "set_reminder", "reminder": { "name": "Medicine Name", "time": "HH:MM", "recurrence": "none" }, "suggestions": [...] }
+
+To set a relative reminder:
+{ "message": "...", "action": "set_reminder", "reminder": { "name": "Medicine Name", "time": "00:00", "delayMinutes": 1, "recurrence": "none" }, "suggestions": [...] }
 
 To set a recurring reminder, use recurrence "daily" or "weekly".
 
@@ -128,11 +145,13 @@ To snooze one reminder:
 { "message": "...", "action": "snooze_reminder", "reminder": { "name": "Medicine Name", "time": "00:00", "recurrence": "none", "snoozeMinutes": 10 }, "suggestions": [...] }
 
 TIME RULES:
+- For "in X minute(s)" or "after X minute(s)", ALWAYS use delayMinutes instead of rounding to HH:MM.
 - "8ish" → 08:00 if morning context, 20:00 if evening context
 - "tonight/evening/pm" → PM hours
 - "morning" → 08:00, "noon/lunch" → 12:00, "night/bedtime" → 21:00, "after dinner" → 19:00
 - Bare 1-6 → assume PM. Bare 7-11 → prefer AM unless context says PM
 - Always output 24-hour "HH:MM"
+- When asked to check reminders, list only pending/due reminders as active. Do not call taken/completed reminders "set".
 
 MEDICINE NAME RULES:
 - Extract real name: "Biogesic", "Vitamin C", "Metformin"
