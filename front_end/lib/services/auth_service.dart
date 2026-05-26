@@ -37,6 +37,39 @@ class AuthService {
     }
   }
 
+  // ── Email Sign-In ──────────────────────────────────────────────────────────
+
+  static Future<UserCredential> signInWithEmail({
+    required String email,
+    required String password,
+  }) {
+    return _auth.signInWithEmailAndPassword(
+      email: email.trim(),
+      password: password,
+    );
+  }
+
+  static Future<UserCredential> createAccountWithEmail({
+    required String email,
+    required String password,
+    String? displayName,
+  }) async {
+    final credential = await _auth.createUserWithEmailAndPassword(
+      email: email.trim(),
+      password: password,
+    );
+    final name = displayName?.trim();
+    if (name != null && name.isNotEmpty) {
+      await credential.user?.updateDisplayName(name);
+    }
+    await credential.user?.sendEmailVerification();
+    return credential;
+  }
+
+  static Future<void> sendPasswordReset(String email) {
+    return _auth.sendPasswordResetEmail(email: email.trim());
+  }
+
   // ── Sign Out ───────────────────────────────────────────────────────────────
 
   static Future<void> signOut() async {

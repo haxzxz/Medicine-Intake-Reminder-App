@@ -37,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _disposed = false;
   DateTime? _lastSendTime;
   int _nextId = 1;
+  final Set<int> _pendingConfirmations = {};
 
   static const List<String> _defaultChips = [
     'yo zam pills 8ish',
@@ -121,31 +122,16 @@ class _HomeScreenState extends State<HomeScreen> {
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_disposed) return;
-      bool changed = false;
       for (var i = 0; i < _reminders.length; i++) {
         final r = _reminders[i];
-        if (!r.fired && r.time.isBefore(DateTime.now())) {
-          changed = true;
-          _logReminder(r, 'fired');
-          if (r.isRecurring) {
-            final next = r.nextOccurrence();
-            _reminders[i] = next;
-            _scheduleReminder(next);
-          } else {
-            r.fired = true;
-          }
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _addBotMessage(
-              "🔔 Time to take your ${r.medicineName}!\nDon't forget to take it with water 💧",
-            );
-          });
+        if (!r.fired &&
+            r.time.isBefore(DateTime.now()) &&
+            !_pendingConfirmations.contains(r.id)) {
+          _pendingConfirmations.add(r.id);
+          unawaited(_confirmDueReminder(r));
         }
       }
       _safeSetState(() {});
-      if (changed) {
-        StorageService.saveReminders(_reminders);
-        unawaited(BackendService.syncReminders(_reminders));
-      }
     });
   }
 
@@ -300,6 +286,67 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     await StorageService.appendLog(log);
     unawaited(BackendService.appendLog(log));
+  }
+
+  Future<void> _confirmDueReminder(Reminder r) async {
+    if (!mounted || _disposed) return;
+    _addBotMessage("🔔 Time to take your ${r.medicineName}.");
+
+    final action = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Medicine reminder'),
+          content: Text('Did you take ${r.medicineName}?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, 'missed'),
+              child: const Text('Missed'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, 'snooze'),
+              child: const Text('Snooze 10 min'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, 'taken'),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF534AB7),
+              ),
+              child: const Text('Taken'),
+            ),
+          ],
+        );
+      },
+    );
+
+    _pendingConfirmations.remove(r.id);
+    final index = _reminders.indexWhere((item) => item.id == r.id);
+    if (index == -1) return;
+
+    if (action == 'snooze') {
+      await _snoozeReminder(_reminders[index], minutes: 10);
+      _addBotMessage('Snoozed ${r.medicineName} for 10 minutes.');
+      return;
+    }
+
+    final status = action == 'taken' ? 'fired' : 'missed';
+    await _logReminder(_reminders[index], status);
+    if (_reminders[index].isRecurring) {
+      final next = _reminders[index].nextOccurrence();
+      _safeSetState(() => _reminders[index] = next);
+      await _scheduleReminder(next);
+      unawaited(BackendService.upsertReminder(next));
+    } else {
+      _safeSetState(() => _reminders[index].fired = true);
+    }
+    await StorageService.saveReminders(_reminders);
+    unawaited(BackendService.syncReminders(_reminders));
+    _addBotMessage(
+      action == 'taken'
+          ? 'Logged ${r.medicineName} as taken.'
+          : 'Logged ${r.medicineName} as missed.',
+    );
   }
 
   Reminder? _findReminderByName(String? name) {
