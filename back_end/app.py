@@ -82,6 +82,10 @@ class ReminderLog(db.Model):
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    if not app.config["CORS_ORIGINS"]:
+        raise RuntimeError(
+            "CORS_ORIGINS must be set to one or more trusted origins."
+        )
     CORS(app, origins=app.config["CORS_ORIGINS"])
     db.init_app(app)
 

@@ -16,5 +16,9 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
     GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-flash-lite-latest")
-    FIREBASE_AUTH_REQUIRED = os.getenv("FIREBASE_AUTH_REQUIRED", "false").lower() == "true"
-    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*")
+    FIREBASE_AUTH_REQUIRED = os.getenv("FIREBASE_AUTH_REQUIRED", "true").lower() == "true"
+    CORS_ORIGINS = [
+        origin.strip()
+        for origin in os.getenv("CORS_ORIGINS", "").split(",")
+        if origin.strip()
+    ]

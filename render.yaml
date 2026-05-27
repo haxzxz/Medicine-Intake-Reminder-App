@@ -15,6 +15,6 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: FIREBASE_AUTH_REQUIRED
-        value: "false"
+        value: "true"
       - key: CORS_ORIGINS
-        value: "*"
+        sync: false
