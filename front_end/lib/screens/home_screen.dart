@@ -29,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen>
   final TextEditingController _inputCtrl = TextEditingController();
   final ScrollController _scrollCtrl = ScrollController();
   final SpeechToText _speech = SpeechToText();
-  final ClaudeService _claude = ClaudeService();
+  final GeminiService _gemini = GeminiService();
   late final AnimationController _micPulseCtrl;
   late final Animation<double> _micScale;
 
@@ -229,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen>
     _safeSetState(() => _isLoading = true);
 
     // Key comes from .env via GeminiService — no UI dialog needed
-    final res = await _claude.chat(userMessage: text, reminders: _reminders);
+    final res = await _gemini.chat(userMessage: text, reminders: _reminders);
 
     Reminder? newReminder;
     if (res.action == 'set_reminder' && res.reminder != null) {
@@ -245,7 +245,7 @@ class _HomeScreenState extends State<HomeScreen>
       await _scheduleReminder(newReminder);
       await StorageService.saveReminders(_reminders);
       unawaited(_upsertReminderToBackend(newReminder));
-      _claude.clearHistory();
+      _gemini.clearHistory();
     } else if (res.action == 'delete_reminder') {
       final reminder = _findReminderByName(res.reminder?.name);
       if (reminder == null) {
@@ -276,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen>
       _reminders.clear();
       await StorageService.clearReminders();
       unawaited(BackendService.deleteAllReminders());
-      _claude.clearHistory();
+      _gemini.clearHistory();
     }
 
     _safeSetState(() => _isLoading = false);
@@ -421,7 +421,7 @@ class _HomeScreenState extends State<HomeScreen>
 
     if (action == 'snooze') {
       await _snoozeReminder(_reminders[index], minutes: 10);
-      _claude.clearHistory();
+      _gemini.clearHistory();
       _addBotMessage('Snoozed ${r.medicineName} for 10 minutes.');
       return;
     }
@@ -441,7 +441,7 @@ class _HomeScreenState extends State<HomeScreen>
     }
     await StorageService.saveReminders(_reminders);
     unawaited(_syncRemindersToBackend());
-    _claude.clearHistory();
+    _gemini.clearHistory();
     _addBotMessage(
       action == 'taken'
           ? 'Logged ${r.medicineName} as taken.'
@@ -481,7 +481,7 @@ class _HomeScreenState extends State<HomeScreen>
     await _scheduleReminder(next);
     await StorageService.saveReminders(_reminders);
     unawaited(_upsertReminderToBackend(next));
-    _claude.clearHistory();
+    _gemini.clearHistory();
   }
 
   void _setListening(bool value) {
@@ -633,7 +633,7 @@ class _HomeScreenState extends State<HomeScreen>
     _safeSetState(() => _reminders.remove(r));
     await StorageService.saveReminders(_reminders);
     unawaited(BackendService.deleteReminder(r.id));
-    _claude.clearHistory();
+    _gemini.clearHistory();
     if (showMessage) _addBotMessage('Deleted ${r.medicineName}.');
   }
 

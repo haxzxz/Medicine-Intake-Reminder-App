@@ -55,7 +55,7 @@ class ReminderIntent {
   }
 }
 
-class ClaudeService {
+class GeminiService {
   static String get _apiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
 
   static String get _model => dotenv.env['GEMINI_MODEL'] ?? 'gemini-2.0-flash';
