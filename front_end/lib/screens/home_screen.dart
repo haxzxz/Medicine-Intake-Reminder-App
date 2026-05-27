@@ -221,6 +221,12 @@ class _HomeScreenState extends State<HomeScreen>
 
     _addUserMessage(text);
 
+    final quickRelativeReminder = _quickRelativeReminderIntent(text);
+    if (quickRelativeReminder != null) {
+      await _createReminderFromIntent(quickRelativeReminder);
+      return;
+    }
+
     if (_isReminderStatusQuestion(text)) {
       _addBotMessage(_activeReminderSummary());
       return;
@@ -233,19 +239,7 @@ class _HomeScreenState extends State<HomeScreen>
 
     Reminder? newReminder;
     if (res.action == 'set_reminder' && res.reminder != null) {
-      final intent = res.reminder!;
-      final time = _parseReminderTime(intent, text);
-      newReminder = Reminder(
-        id: _nextId++,
-        medicineName: intent.name,
-        time: time,
-        recurrence: _normaliseRecurrence(intent.recurrence),
-      );
-      _reminders.add(newReminder);
-      await _scheduleReminder(newReminder);
-      await StorageService.saveReminders(_reminders);
-      unawaited(_upsertReminderToBackend(newReminder));
-      _gemini.clearHistory();
+      newReminder = await _createReminderFromIntent(res.reminder!, text);
     } else if (res.action == 'delete_reminder') {
       final reminder = _findReminderByName(res.reminder?.name);
       if (reminder == null) {
@@ -293,6 +287,75 @@ class _HomeScreenState extends State<HomeScreen>
       return DateTime.now().add(Duration(minutes: delay));
     }
     return _parseTime(intent.time);
+  }
+
+  Future<Reminder> _createReminderFromIntent(
+    ReminderIntent intent, [
+    String sourceText = '',
+  ]) async {
+    final time = _parseReminderTime(intent, sourceText);
+    final reminder = Reminder(
+      id: _nextId++,
+      medicineName: intent.name,
+      time: time,
+      recurrence: _normaliseRecurrence(intent.recurrence),
+    );
+    _reminders.add(reminder);
+    await _scheduleReminder(reminder);
+    await StorageService.saveReminders(_reminders);
+    unawaited(_upsertReminderToBackend(reminder));
+    _gemini.clearHistory();
+    _addBotMessage(
+      'Got it! I set ${reminder.medicineName} for ${reminder.timeUntilLabel}.',
+      reminder: reminder,
+    );
+    return reminder;
+  }
+
+  ReminderIntent? _quickRelativeReminderIntent(String text) {
+    final delay = _relativeDelayFromText(text);
+    if (delay == null || delay <= 0) return null;
+
+    final normalized = text.toLowerCase();
+    final looksLikeReminder = RegExp(
+      r'\b(remind|reminder|take|medicine|meds|pill|pills|dose)\b',
+    ).hasMatch(normalized);
+    if (!looksLikeReminder) return null;
+
+    final name = _medicineNameFromRelativeText(text);
+    return ReminderIntent(
+      name: name,
+      time: '00:00',
+      delayMinutes: delay,
+      recurrence: 'none',
+    );
+  }
+
+  String _medicineNameFromRelativeText(String text) {
+    var cleaned = text
+        .replaceAll(
+          RegExp(
+            r'\b(remind me|reminder|remind|to take|take|medicine|meds|pill|pills|dose|in|after|for)\b',
+            caseSensitive: false,
+          ),
+          ' ',
+        )
+        .replaceAll(
+          RegExp(
+            r'\b\d{1,3}\s*(m|min|mins|minute|minutes|s|sec|secs|second|seconds)\b',
+            caseSensitive: false,
+          ),
+          ' ',
+        )
+        .trim();
+    cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ');
+    if (cleaned.isEmpty) return 'Medicine';
+    return cleaned
+        .split(' ')
+        .map((word) => word.isEmpty
+            ? word
+            : '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}')
+        .join(' ');
   }
 
   bool _isReminderStatusQuestion(String text) {

@@ -12,6 +12,7 @@ import 'auth_service.dart';
 class BackendService {
   static String get _baseUrl {
     final raw = dotenv.env['BACKEND_URL']?.trim() ?? '';
+    if (raw.isEmpty || raw == '*') return '';
     if (raw.endsWith('/')) return raw.substring(0, raw.length - 1);
     return raw;
   }

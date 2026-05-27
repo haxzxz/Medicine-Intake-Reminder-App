@@ -63,6 +63,7 @@ class GeminiService {
 
   static String get _backendUrl {
     final raw = dotenv.env['BACKEND_URL']?.trim() ?? '';
+    if (raw.isEmpty || raw == '*') return '';
     if (raw.endsWith('/')) return raw.substring(0, raw.length - 1);
     return raw;
   }
@@ -146,6 +147,9 @@ To snooze one reminder:
 { "message": "...", "action": "snooze_reminder", "reminder": { "name": "Medicine Name", "time": "00:00", "recurrence": "none", "snoozeMinutes": 10 }, "suggestions": [...] }
 
 TIME RULES:
+- If the user says "remind me in X minutes", "2 mins", "in 2 mins", or any short relative time phrase, treat it as SET REMINDER, not a reminder-status question.
+- If the user asks for a reminder but does not name medicine, set name to "Medicine" instead of asking a follow-up, unless the time is missing.
+- If the previous user message asked to set a medicine reminder and the current message only gives a time like "2 mins" or "8 pm", complete that reminder using the prior medicine name.
 - For "in X minute(s)" or "after X minute(s)", ALWAYS use delayMinutes instead of rounding to HH:MM.
 - "8ish" → 08:00 if morning context, 20:00 if evening context
 - "tonight/evening/pm" → PM hours
