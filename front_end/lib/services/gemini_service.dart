@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -120,6 +121,10 @@ YOUR CAPABILITIES:
 2. MANAGE REMINDERS — "what do I have set?", "clear everything", "delete vitamin reminder", "snooze biogesic 10 minutes"
 3. HEALTH INFO — brief helpful tips (food interactions, storage, timing). Say "consult your doctor" for symptoms.
 4. CONVERSATION MEMORY — remember everything said this session; handle follow-ups naturally
+
+SCOPE RULE:
+- If the user asks about unrelated topics like coding, sports, politics, entertainment, homework, travel, finance, weather, jokes, or general trivia, politely say you only specialize in medicine information, medicine intakes, and medicine reminders.
+- Do not answer unrelated questions. Offer to help with medicine reminders or medicine intake questions instead.
 
 RESPONSE FORMAT — respond ONLY with valid JSON, no markdown, no backticks:
 {
@@ -325,6 +330,11 @@ PERSONALITY: casual, warm, brief. Don't repeat reminder details (the card shows 
     } on TimeoutException {
       _history.removeLast();
       return ZamResponse.error("Request timed out. Check your internet.");
+    } on SocketException {
+      _history.removeLast();
+      return ZamResponse.error(
+        "You're offline right now. Check your internet connection, then try again.",
+      );
     } catch (e) {
       _history.removeLast();
       debugPrint('Gemini error: $e');
@@ -365,6 +375,10 @@ PERSONALITY: casual, warm, brief. Don't repeat reminder details (the card shows 
       return _parseZamResponse(parsed);
     } on TimeoutException {
       return ZamResponse.error('Backend timed out. Check your connection.');
+    } on SocketException {
+      return ZamResponse.error(
+        "You're offline right now. Check your internet connection, then try again.",
+      );
     } catch (e) {
       debugPrint('Backend chat error: $e');
       return ZamResponse.error(

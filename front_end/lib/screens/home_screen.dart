@@ -221,6 +221,18 @@ class _HomeScreenState extends State<HomeScreen>
 
     _addUserMessage(text);
 
+    if (_isUnrelatedQuestion(text)) {
+      _addBotMessage(
+        "I'm here for medicine information, medicine intakes, and medicine reminders only. I can help you set a dose reminder or answer a medicine-related question.",
+        suggestions: const [
+          'set medicine reminder',
+          'what meds do I have set?',
+          'medicine safety question',
+        ],
+      );
+      return;
+    }
+
     final quickRelativeReminder = _quickRelativeReminderIntent(text);
     if (quickRelativeReminder != null) {
       await _createReminderFromIntent(quickRelativeReminder);
@@ -366,6 +378,18 @@ class _HomeScreenState extends State<HomeScreen>
         RegExp(r'\b(my|active|upcoming)\s+(reminder|reminders|meds|medicine|medicines)\b')
             .hasMatch(normalized) ||
         normalized.contains('what do i have set');
+  }
+
+  bool _isUnrelatedQuestion(String text) {
+    final normalized = text.toLowerCase().trim();
+    final medicineWords = RegExp(
+      r'\b(med|meds|medicine|medicines|pill|pills|dose|dosage|drug|drugs|tablet|capsule|remind|reminder|take|taken|snooze|delete|allergy|biogesic|paracetamol|ibuprofen|antibiotic|vitamin|prescription)\b',
+    );
+    if (medicineWords.hasMatch(normalized)) return false;
+
+    return RegExp(
+      r'\b(code|coding|program|sports|basketball|movie|music|joke|weather|travel|recipe|homework|math|finance|stock|crypto|politics|news|game|gaming)\b',
+    ).hasMatch(normalized);
   }
 
   String _activeReminderSummary() {

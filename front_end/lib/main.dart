@@ -95,12 +95,36 @@ class ZamApp extends StatelessWidget {
             return const _SplashScreen();
           }
           if (snapshot.hasData) {
-            return const HomeScreen();
+            return const _SignedInLaunchDelay();
           }
           return const LoginScreen();
         },
       ),
     );
+  }
+}
+
+class _SignedInLaunchDelay extends StatefulWidget {
+  const _SignedInLaunchDelay();
+
+  @override
+  State<_SignedInLaunchDelay> createState() => _SignedInLaunchDelayState();
+}
+
+class _SignedInLaunchDelayState extends State<_SignedInLaunchDelay> {
+  bool _ready = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 900), () {
+      if (mounted) setState(() => _ready = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _ready ? const HomeScreen() : const _SplashScreen();
   }
 }
 

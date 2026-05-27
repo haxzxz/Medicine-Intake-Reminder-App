@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -50,7 +49,9 @@ class _LoginScreenState extends State<LoginScreen>
     });
     try {
       final cred = await AuthService.signInWithGoogle();
-      if (cred != null && mounted) _goHome();
+      if (cred == null && mounted) {
+        setState(() => _loadingGoogle = false);
+      }
     } on FirebaseAuthException catch (e) {
       _showError(_friendlyError(e.code));
     } catch (_) {
@@ -88,7 +89,6 @@ class _LoginScreenState extends State<LoginScreen>
       } else {
         await AuthService.signInWithEmail(email: email, password: password);
       }
-      if (mounted) _goHome();
     } on FirebaseAuthException catch (e) {
       _showError(_friendlyError(e.code));
     } catch (_) {
@@ -121,12 +121,6 @@ class _LoginScreenState extends State<LoginScreen>
     } finally {
       if (mounted) setState(() => _loadingEmail = false);
     }
-  }
-
-  void _goHome() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-    );
   }
 
   void _showError(String msg) {
