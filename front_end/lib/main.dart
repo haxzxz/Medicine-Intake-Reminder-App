@@ -24,8 +24,8 @@ void main() async {
   // Timezone: use real device timezone (UTC+8 for Philippines)
   tz.initializeTimeZones();
   try {
-    final String tz_name = (await FlutterTimezone.getLocalTimezone()).identifier;
-    tz.setLocalLocation(tz.getLocation(tz_name));
+    final String tzName = (await FlutterTimezone.getLocalTimezone()).identifier;
+    tz.setLocalLocation(tz.getLocation(tzName));
   } catch (_) {
     tz.setLocalLocation(tz.UTC);
   }

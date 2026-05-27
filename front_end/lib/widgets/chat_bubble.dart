@@ -17,7 +17,7 @@ class ChatBubble extends StatelessWidget {
         if (!isUser) ...[
           CircleAvatar(
             radius: 14,
-            backgroundColor: const Color(0xFF534AB7).withOpacity(0.15),
+            backgroundColor: const Color(0xFF534AB7).withValues(alpha: 0.15),
             child: const Text('Z',
                 style: TextStyle(
                     color: Color(0xFF534AB7),
@@ -28,18 +28,29 @@ class ChatBubble extends StatelessWidget {
         ],
         Flexible(
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: isUser
                   ? const Color(0xFF534AB7)
-                  : scheme.surfaceContainerHighest,
+                  : scheme.surfaceContainerHighest.withValues(alpha: 0.86),
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(18),
                 topRight: const Radius.circular(18),
                 bottomLeft: Radius.circular(isUser ? 18 : 4),
                 bottomRight: Radius.circular(isUser ? 4 : 18),
               ),
+              border: isUser
+                  ? null
+                  : Border.all(
+                      color: scheme.outlineVariant.withValues(alpha: 0.24),
+                    ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isUser ? 0.08 : 0.04),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child: Text(
               text,

@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../models/reminder_log.dart';
 import '../services/storage_service.dart';
 
 class ReminderLogScreen extends StatefulWidget {
-  const ReminderLogScreen({super.key});
+  final bool embedded;
+  final int refreshToken;
+
+  const ReminderLogScreen({
+    super.key,
+    this.embedded = false,
+    this.refreshToken = 0,
+  });
 
   @override
   State<ReminderLogScreen> createState() => _ReminderLogScreenState();
@@ -20,6 +28,14 @@ class _ReminderLogScreenState extends State<ReminderLogScreen> {
     _loadLogs();
   }
 
+  @override
+  void didUpdateWidget(covariant ReminderLogScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshToken != widget.refreshToken) {
+      _loadLogs();
+    }
+  }
+
   Future<void> _loadLogs() async {
     final logs = await StorageService.loadLogs();
     setState(() {
@@ -30,6 +46,7 @@ class _ReminderLogScreenState extends State<ReminderLogScreen> {
   }
 
   Future<void> _clearAll() async {
+    HapticFeedback.mediumImpact();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -43,7 +60,10 @@ class _ReminderLogScreenState extends State<ReminderLogScreen> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () {
+              HapticFeedback.heavyImpact();
+              Navigator.pop(context, true);
+            },
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Clear'),
           ),
@@ -59,6 +79,20 @@ class _ReminderLogScreenState extends State<ReminderLogScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final body = _loading
+        ? const Center(child: CircularProgressIndicator())
+        : _logs.isEmpty
+            ? _buildEmpty(scheme)
+            : _buildList(scheme);
+
+    if (widget.embedded) {
+      return Column(
+        children: [
+          _buildEmbeddedHeader(scheme),
+          Expanded(child: body),
+        ],
+      );
+    }
 
     return Scaffold(
       backgroundColor: scheme.surface,
@@ -77,7 +111,7 @@ class _ReminderLogScreenState extends State<ReminderLogScreen> {
               '${_logs.length} entries',
               style: TextStyle(
                 fontSize: 11,
-                color: scheme.onSurface.withOpacity(0.45),
+                color: scheme.onSurface.withValues(alpha: 0.45),
                 fontWeight: FontWeight.normal,
               ),
             ),
@@ -89,7 +123,7 @@ class _ReminderLogScreenState extends State<ReminderLogScreen> {
               tooltip: 'Clear all',
               icon: Icon(
                 Icons.delete_sweep_outlined,
-                color: scheme.onSurface.withOpacity(0.5),
+                color: scheme.onSurface.withValues(alpha: 0.5),
               ),
               onPressed: _clearAll,
             ),
@@ -98,15 +132,55 @@ class _ReminderLogScreenState extends State<ReminderLogScreen> {
           preferredSize: const Size.fromHeight(1),
           child: Divider(
             height: 1,
-            color: scheme.outlineVariant.withOpacity(0.3),
+            color: scheme.outlineVariant.withValues(alpha: 0.3),
           ),
         ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _logs.isEmpty
-          ? _buildEmpty(scheme)
-          : _buildList(scheme),
+      body: body,
+    );
+  }
+
+  Widget _buildEmbeddedHeader(ColorScheme scheme) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 8, 10),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border(
+          bottom:
+              BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.3)),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Reminder Logs',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
+                ),
+                Text(
+                  '${_logs.length} entries',
+                  style: TextStyle(
+                    color: scheme.onSurface.withValues(alpha: 0.45),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_logs.isNotEmpty)
+            IconButton(
+              tooltip: 'Clear all',
+              icon: Icon(
+                Icons.delete_sweep_outlined,
+                color: scheme.onSurface.withValues(alpha: 0.5),
+              ),
+              onPressed: _clearAll,
+            ),
+        ],
+      ),
     );
   }
 
@@ -120,7 +194,7 @@ class _ReminderLogScreenState extends State<ReminderLogScreen> {
             height: 72,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF534AB7).withOpacity(0.08),
+              color: const Color(0xFF534AB7).withValues(alpha: 0.08),
             ),
             child: const Icon(
               Icons.history_rounded,
@@ -133,7 +207,7 @@ class _ReminderLogScreenState extends State<ReminderLogScreen> {
             'No reminders yet',
             style: TextStyle(
               fontWeight: FontWeight.w500,
-              color: scheme.onSurface.withOpacity(0.6),
+              color: scheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 6),
@@ -141,7 +215,7 @@ class _ReminderLogScreenState extends State<ReminderLogScreen> {
             'Your reminder history will appear here',
             style: TextStyle(
               fontSize: 13,
-              color: scheme.onSurface.withOpacity(0.4),
+              color: scheme.onSurface.withValues(alpha: 0.4),
             ),
           ),
         ],
@@ -175,7 +249,7 @@ class _ReminderLogScreenState extends State<ReminderLogScreen> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: scheme.onSurface.withOpacity(0.4),
+                  color: scheme.onSurface.withValues(alpha: 0.4),
                   letterSpacing: 0.6,
                 ),
               ),
@@ -195,60 +269,65 @@ class _ReminderLogScreenState extends State<ReminderLogScreen> {
     final isSnoozed = log.status == 'snoozed';
     final isDeleted = log.status == 'deleted';
 
-    Color statusColor = isFired
+    final statusColor = isFired
         ? const Color(0xFF1D9E75)
         : isMissed
-        ? Colors.orange
-        : isSnoozed
-        ? const Color(0xFF534AB7)
-        : scheme.onSurface.withOpacity(0.4);
+            ? Colors.orange
+            : isSnoozed
+                ? const Color(0xFF534AB7)
+                : scheme.onSurface.withValues(alpha: 0.4);
 
-    IconData statusIcon = isFired
+    final statusIcon = isFired
         ? Icons.check_circle_outline_rounded
         : isMissed
-        ? Icons.warning_amber_rounded
-        : isSnoozed
-        ? Icons.snooze_rounded
-        : Icons.cancel_outlined;
+            ? Icons.warning_amber_rounded
+            : isSnoozed
+                ? Icons.snooze_rounded
+                : Icons.cancel_outlined;
 
-    String statusLabel = isFired
+    final statusLabel = isFired
         ? 'Taken'
         : isMissed
-        ? 'Missed'
-        : isSnoozed
-        ? 'Snoozed'
-        : isDeleted
-        ? 'Deleted'
-        : log.status;
+            ? 'Missed'
+            : isSnoozed
+                ? 'Snoozed'
+                : isDeleted
+                    ? 'Deleted'
+                    : log.status;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: scheme.outlineVariant.withOpacity(0.25)),
+        color: scheme.surfaceContainerLowest.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: statusColor.withValues(alpha: 0.35)),
+        boxShadow: [
+          BoxShadow(
+            color: statusColor.withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Medicine icon
           Container(
-            width: 40,
-            height: 40,
+            width: 6,
+            height: 72,
             decoration: BoxDecoration(
-              color: const Color(0xFF534AB7).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.medication_rounded,
-              color: Color(0xFF534AB7),
-              size: 20,
+              color: statusColor,
+              borderRadius: BorderRadius.circular(6),
             ),
           ),
           const SizedBox(width: 12),
-
-          // Details
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: statusColor.withValues(alpha: 0.12),
+            child: Icon(statusIcon, color: statusColor, size: 21),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,70 +343,61 @@ class _ReminderLogScreenState extends State<ReminderLogScreen> {
                         ),
                       ),
                     ),
-                    // Status badge
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
+                        horizontal: 10,
+                        vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        color: statusColor.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(999),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(statusIcon, size: 11, color: statusColor),
-                          const SizedBox(width: 3),
-                          Text(
-                            statusLabel,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: statusColor,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        statusLabel,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: statusColor,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Icon(
                       Icons.schedule_rounded,
                       size: 12,
-                      color: scheme.onSurface.withOpacity(0.4),
+                      color: scheme.onSurface.withValues(alpha: 0.4),
                     ),
                     const SizedBox(width: 4),
                     Text(
                       'Scheduled ${timeFmt.format(log.scheduledTime)}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: scheme.onSurface.withOpacity(0.5),
+                        color: scheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 2),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
                       Icons.notifications_active_outlined,
                       size: 12,
-                      color: scheme.onSurface.withOpacity(0.4),
+                      color: scheme.onSurface.withValues(alpha: 0.4),
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      '${isSnoozed
-                          ? 'Snoozed'
-                          : isDeleted
-                          ? 'Deleted'
-                          : 'Fired'} at ${timeFmt.format(log.firedAt)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: scheme.onSurface.withOpacity(0.5),
+                    Expanded(
+                      child: Text(
+                        '${isSnoozed ? 'Snoozed' : isDeleted ? 'Deleted' : isFired ? 'Taken' : 'Marked missed'} at ${timeFmt.format(log.firedAt)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: scheme.onSurface.withValues(alpha: 0.5),
+                        ),
                       ),
                     ),
                     if (!isFired) ...[

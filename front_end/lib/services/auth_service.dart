@@ -70,6 +70,22 @@ class AuthService {
     return _auth.sendPasswordResetEmail(email: email.trim());
   }
 
+  static Future<void> updateDisplayName(String displayName) async {
+    final user = currentUser;
+    final name = displayName.trim();
+    if (user == null || name.isEmpty) return;
+    await user.updateDisplayName(name);
+    await user.reload();
+  }
+
+  static Future<void> updatePhotoUrl(String photoUrl) async {
+    final user = currentUser;
+    final url = photoUrl.trim();
+    if (user == null || url.isEmpty) return;
+    await user.updatePhotoURL(url);
+    await user.reload();
+  }
+
   // ── Sign Out ───────────────────────────────────────────────────────────────
 
   static Future<void> signOut() async {

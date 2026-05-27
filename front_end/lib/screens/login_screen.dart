@@ -193,9 +193,10 @@ class _LoginScreenState extends State<LoginScreen>
                       height: 88,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFF534AB7).withOpacity(0.12),
+                        color: const Color(0xFF534AB7).withValues(alpha: 0.12),
                         border: Border.all(
-                          color: const Color(0xFF534AB7).withOpacity(0.25),
+                          color:
+                              const Color(0xFF534AB7).withValues(alpha: 0.25),
                           width: 1.5,
                         ),
                       ),
@@ -218,10 +219,8 @@ class _LoginScreenState extends State<LoginScreen>
                     const SizedBox(height: 6),
                     Text(
                       'Your AI medicine reminder assistant',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ?.copyWith(color: scheme.onSurface.withOpacity(0.5)),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: scheme.onSurface.withValues(alpha: 0.5)),
                       textAlign: TextAlign.center,
                     ),
 
@@ -244,7 +243,7 @@ class _LoginScreenState extends State<LoginScreen>
                     // ── Sign-in buttons ─────────────────────────────────────
                     Text('Sign in to continue',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: scheme.onSurface.withOpacity(0.4),
+                            color: scheme.onSurface.withValues(alpha: 0.4),
                             letterSpacing: 0.5)),
                     const SizedBox(height: 16),
 
@@ -254,7 +253,7 @@ class _LoginScreenState extends State<LoginScreen>
                     Row(children: [
                       Expanded(
                         child: Divider(
-                          color: scheme.outlineVariant.withOpacity(0.6),
+                          color: scheme.outlineVariant.withValues(alpha: 0.6),
                         ),
                       ),
                       Padding(
@@ -262,14 +261,14 @@ class _LoginScreenState extends State<LoginScreen>
                         child: Text(
                           'or',
                           style: TextStyle(
-                            color: scheme.onSurface.withOpacity(0.4),
+                            color: scheme.onSurface.withValues(alpha: 0.4),
                             fontSize: 12,
                           ),
                         ),
                       ),
                       Expanded(
                         child: Divider(
-                          color: scheme.outlineVariant.withOpacity(0.6),
+                          color: scheme.outlineVariant.withValues(alpha: 0.6),
                         ),
                       ),
                     ]),
@@ -327,7 +326,7 @@ class _LoginScreenState extends State<LoginScreen>
                     Text(
                       'By continuing, you agree to our Terms of Service\nand Privacy Policy.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurface.withOpacity(0.35),
+                          color: scheme.onSurface.withValues(alpha: 0.35),
                           fontSize: 11),
                       textAlign: TextAlign.center,
                     ),
@@ -384,7 +383,7 @@ class _LoginScreenState extends State<LoginScreen>
           icon: Icon(
             _showPassword ? Icons.visibility_off : Icons.visibility,
             size: 20,
-            color: scheme.onSurface.withOpacity(0.45),
+            color: scheme.onSurface.withValues(alpha: 0.45),
           ),
         ),
       ),
@@ -444,7 +443,7 @@ class _PillChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFF534AB7).withOpacity(0.08),
+        color: const Color(0xFF534AB7).withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(label,
@@ -491,7 +490,7 @@ class _SocialButton extends StatelessWidget {
             boxShadow: shadow
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
+                      color: Colors.black.withValues(alpha: 0.06),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),

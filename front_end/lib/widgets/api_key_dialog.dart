@@ -38,7 +38,7 @@ class _ApiKeyDialogState extends State<ApiKeyDialog> {
           Text(
             'Zam now uses Google Gemini. Get your free API key at aistudio.google.com',
             style: TextStyle(
-                fontSize: 13, color: scheme.onSurface.withOpacity(0.6)),
+                fontSize: 13, color: scheme.onSurface.withValues(alpha: 0.6)),
           ),
           const SizedBox(height: 14),
           TextField(
@@ -46,8 +46,8 @@ class _ApiKeyDialogState extends State<ApiKeyDialog> {
             obscureText: _obscure,
             decoration: InputDecoration(
               hintText: 'AIza...',
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10)),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               suffixIcon: IconButton(
                 icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
                 onPressed: () => setState(() => _obscure = !_obscure),
@@ -76,8 +76,8 @@ class _ApiKeyDialogState extends State<ApiKeyDialog> {
             child: const Text('Cancel')),
         FilledButton(
           onPressed: () => Navigator.pop(context, _ctrl.text.trim()),
-          style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF534AB7)),
+          style:
+              FilledButton.styleFrom(backgroundColor: const Color(0xFF534AB7)),
           child: const Text('Save'),
         ),
       ],

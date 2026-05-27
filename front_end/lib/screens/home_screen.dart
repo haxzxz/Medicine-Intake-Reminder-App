@@ -1,4 +1,7 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'dart:async';
@@ -11,6 +14,7 @@ import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/reminder_card.dart';
+import 'profile_screen.dart';
 import 'reminder_log_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -34,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen>
   List<String> _suggestions = [];
 
   Timer? _countdownTimer;
+  Timer? _voiceAutoSendTimer;
   bool _isListening = false;
   bool _speechAvailable = false;
   bool _isLoading = false;
@@ -43,7 +48,14 @@ class _HomeScreenState extends State<HomeScreen>
   String _voicePartialText = '';
   DateTime? _lastSendTime;
   int _nextId = 1;
+  int _selectedIndex = 0;
+  int _logRefreshTick = 0;
   final Set<int> _pendingConfirmations = {};
+
+  static const Duration _voiceListenWindow = Duration(minutes: 5);
+  static const Duration _voicePauseWindow = Duration(seconds: 45);
+  static const Duration _voiceRestartDelay = Duration(milliseconds: 1600);
+  static const Duration _voiceAutoSendDelay = Duration(seconds: 8);
 
   static const List<String> _defaultChips = [
     'yo zam pills 8ish',
@@ -78,15 +90,16 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _initSpeech() async {
     try {
       _speechAvailable = await _speech.initialize(
-        onError: (e) => debugPrint('Speech error: ${e.errorMsg}'),
+        onError: (e) {
+          debugPrint('Speech error: ${e.errorMsg}');
+          if (_isHoldingMic && !_disposed) {
+            _restartListeningSoon();
+          }
+        },
         onStatus: (s) {
           if (s == 'done' || s == 'notListening') {
-            if (_isHoldingMic && !_disposed) {
-              Future.delayed(const Duration(milliseconds: 180), () {
-                if (_isHoldingMic && !_disposed) {
-                  unawaited(_listenForSpeechSegment());
-                }
-              });
+            if (_isHoldingMic) {
+              _restartListeningSoon();
             } else {
               _setListening(false);
             }
@@ -193,6 +206,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _send([String? override]) async {
+    HapticFeedback.selectionClick();
     // Debounce: prevent double-fires from voice + keyboard
     final now = DateTime.now();
     if (_lastSendTime != null &&
@@ -214,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen>
 
     _safeSetState(() => _isLoading = true);
 
-    // Key comes from .env via ClaudeService — no UI dialog needed
+    // Key comes from .env via GeminiService — no UI dialog needed
     final res = await _claude.chat(userMessage: text, reminders: _reminders);
 
     Reminder? newReminder;
@@ -373,15 +387,24 @@ class _HomeScreenState extends State<HomeScreen>
           content: Text('Did you take ${r.medicineName}?'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(dialogContext, 'missed'),
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                Navigator.pop(dialogContext, 'missed');
+              },
               child: const Text('Missed'),
             ),
             TextButton(
-              onPressed: () => Navigator.pop(dialogContext, 'snooze'),
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                Navigator.pop(dialogContext, 'snooze');
+              },
               child: const Text('Snooze 10 min'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, 'taken'),
+              onPressed: () {
+                HapticFeedback.heavyImpact();
+                Navigator.pop(dialogContext, 'taken');
+              },
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF534AB7),
               ),
@@ -473,6 +496,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _startListening() async {
+    HapticFeedback.mediumImpact();
     if (!_speechAvailable) {
       _addBotMessage(
         "Microphone isn't available. Check mic permissions in Settings.",
@@ -496,16 +520,35 @@ class _HomeScreenState extends State<HomeScreen>
           _captureSpeechResult(result.recognizedWords, result.finalResult);
         }
       },
-      localeId: 'en_US',
-      listenFor: const Duration(seconds: 60),
-      pauseFor: const Duration(seconds: 8),
-      partialResults: true,
-      cancelOnError: true,
+      listenOptions: SpeechListenOptions(
+        localeId: 'en_US',
+        listenFor: _voiceListenWindow,
+        pauseFor: _voicePauseWindow,
+        partialResults: true,
+        cancelOnError: true,
+      ),
     );
+  }
+
+  Future<void> _toggleVoiceInput() async {
+    if (_isListening || _isHoldingMic) {
+      await _stopListening(send: true);
+    } else {
+      await _startListening();
+    }
+  }
+
+  Future<void> _restartListeningSoon() async {
+    await Future.delayed(_voiceRestartDelay);
+    if (_isHoldingMic && !_disposed && !_speech.isListening) {
+      await _listenForSpeechSegment();
+    }
   }
 
   Future<void> _stopListening({required bool send}) async {
     if (!_isListening && !_isHoldingMic) return;
+    HapticFeedback.lightImpact();
+    _voiceAutoSendTimer?.cancel();
     _isHoldingMic = false;
     await _speech.stop();
     _setListening(false);
@@ -529,6 +572,17 @@ class _HomeScreenState extends State<HomeScreen>
       _voicePartialText = cleaned;
     }
     _safeSetState(() => _inputCtrl.text = _mergedVoiceText());
+    _scheduleVoiceAutoSend();
+  }
+
+  void _scheduleVoiceAutoSend() {
+    _voiceAutoSendTimer?.cancel();
+    if (!_isHoldingMic || _mergedVoiceText().trim().isEmpty) return;
+    _voiceAutoSendTimer = Timer(_voiceAutoSendDelay, () {
+      if (_isHoldingMic && !_disposed && _mergedVoiceText().trim().isNotEmpty) {
+        unawaited(_stopListening(send: true));
+      }
+    });
   }
 
   String _mergedVoiceText() {
@@ -549,6 +603,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _deleteReminder(Reminder r) async {
+    HapticFeedback.mediumImpact();
     await _deleteReminderInternal(r);
   }
 
@@ -566,41 +621,11 @@ class _HomeScreenState extends State<HomeScreen>
     if (showMessage) _addBotMessage('Deleted ${r.medicineName}.');
   }
 
-  void _openLog() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const ReminderLogScreen()));
-  }
-
-  Future<void> _signOut() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Sign out?'),
-        content: const Text('You will be returned to the login screen.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF534AB7),
-            ),
-            child: const Text('Sign out'),
-          ),
-        ],
-      ),
-    );
-    if (confirm == true) await AuthService.signOut();
-    // Auth stream in main.dart automatically navigates back to LoginScreen
-  }
-
   @override
   void dispose() {
     _disposed = true;
     _countdownTimer?.cancel();
+    _voiceAutoSendTimer?.cancel();
     _inputCtrl.dispose();
     _scrollCtrl.dispose();
     _micPulseCtrl.dispose();
@@ -619,25 +644,102 @@ class _HomeScreenState extends State<HomeScreen>
     return Scaffold(
       backgroundColor: scheme.surface,
       appBar: _buildAppBar(scheme, textTheme),
-      body: Column(
+      body: IndexedStack(
+        index: _selectedIndex,
         children: [
-          if (_reminders.isNotEmpty) _buildRemindersStrip(scheme),
-          Expanded(child: _buildMessages(scheme)),
-          if (_isLoading) _buildTypingIndicator(scheme),
-          if (_isListening) _buildListeningBanner(),
-          if (_suggestions.isNotEmpty) _buildSuggestions(),
-          _buildInputRow(scheme),
-          SizedBox(height: MediaQuery.of(context).padding.bottom),
+          _buildChatTab(scheme),
+          ReminderLogScreen(
+            embedded: true,
+            refreshToken: _logRefreshTick,
+          ),
+          const ProfileScreen(),
         ],
+      ),
+      bottomNavigationBar: _buildGlassNavigation(scheme),
+    );
+  }
+
+  Widget _buildGlassNavigation(ColorScheme scheme) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: scheme.surface.withValues(alpha: 0.78),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: scheme.outlineVariant.withValues(alpha: 0.45),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: NavigationBar(
+                height: 66,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                indicatorColor: const Color(0xFF534AB7).withValues(alpha: 0.16),
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: (index) {
+                  HapticFeedback.selectionClick();
+                  if (_isListening || _isHoldingMic) {
+                    unawaited(_stopListening(send: false));
+                  }
+                  _safeSetState(() {
+                    _selectedIndex = index;
+                    if (index == 1) _logRefreshTick++;
+                  });
+                },
+                destinations: const [
+                  NavigationDestination(
+                    icon: Icon(Icons.chat_bubble_outline_rounded),
+                    selectedIcon: Icon(Icons.chat_bubble_rounded),
+                    label: 'Chat',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.history_rounded),
+                    selectedIcon: Icon(Icons.history_rounded),
+                    label: 'Logs',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.person_outline_rounded),
+                    selectedIcon: Icon(Icons.person_rounded),
+                    label: 'Profile',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(ColorScheme scheme, TextTheme textTheme) {
-    final photoUrl = AuthService.photoUrl;
+  Widget _buildChatTab(ColorScheme scheme) {
+    return Column(
+      children: [
+        if (_reminders.isNotEmpty) _buildRemindersStrip(scheme),
+        Expanded(child: _buildMessages(scheme)),
+        if (_isLoading) _buildTypingIndicator(scheme),
+        if (_isListening) _buildListeningBanner(),
+        if (_suggestions.isNotEmpty) _buildSuggestions(),
+        _buildInputRow(scheme),
+      ],
+    );
+  }
 
+  PreferredSizeWidget _buildAppBar(ColorScheme scheme, TextTheme textTheme) {
     return AppBar(
-      backgroundColor: scheme.surface,
+      backgroundColor: scheme.surface.withValues(alpha: 0.88),
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       title: Row(
@@ -647,7 +749,8 @@ class _HomeScreenState extends State<HomeScreen>
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: const Color(0xFF534AB7).withOpacity(0.15),
+                backgroundColor:
+                    const Color(0xFF534AB7).withValues(alpha: 0.15),
                 child: const Text(
                   'Z',
                   style: TextStyle(
@@ -707,54 +810,11 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         ],
       ),
-      actions: [
-        // ── Reminder log icon (replaces key icon) ──
-        IconButton(
-          tooltip: 'Reminder history',
-          icon: Icon(
-            Icons.history_rounded,
-            color: scheme.onSurface.withOpacity(0.6),
-            size: 24,
-          ),
-          onPressed: _openLog,
-        ),
-        // ── User avatar + sign out ──
-        GestureDetector(
-          onTap: _signOut,
-          child: Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Tooltip(
-              message: 'Sign out (${AuthService.displayName})',
-              child: photoUrl != null
-                  ? CircleAvatar(
-                      radius: 16,
-                      backgroundImage: NetworkImage(photoUrl),
-                    )
-                  : CircleAvatar(
-                      radius: 16,
-                      backgroundColor: const Color(
-                        0xFF534AB7,
-                      ).withOpacity(0.15),
-                      child: Text(
-                        AuthService.displayName.isNotEmpty
-                            ? AuthService.displayName[0].toUpperCase()
-                            : 'U',
-                        style: const TextStyle(
-                          color: Color(0xFF534AB7),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-            ),
-          ),
-        ),
-      ],
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
         child: Divider(
           height: 1,
-          color: scheme.outlineVariant.withOpacity(0.3),
+          color: scheme.outlineVariant.withValues(alpha: 0.3),
         ),
       ),
     );
@@ -764,9 +824,10 @@ class _HomeScreenState extends State<HomeScreen>
     return Container(
       constraints: const BoxConstraints(maxHeight: 160),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLowest,
+        color: scheme.surfaceContainerLowest.withValues(alpha: 0.82),
         border: Border(
-          bottom: BorderSide(color: scheme.outlineVariant.withOpacity(0.3)),
+          bottom:
+              BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.3)),
         ),
       ),
       child: Column(
@@ -778,7 +839,7 @@ class _HomeScreenState extends State<HomeScreen>
             child: Text(
               'Active reminders',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: scheme.onSurface.withOpacity(0.45),
+                    color: scheme.onSurface.withValues(alpha: 0.45),
                     letterSpacing: 0.8,
                   ),
             ),
@@ -802,12 +863,12 @@ class _HomeScreenState extends State<HomeScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: isPast ? Colors.orange.withOpacity(0.08) : scheme.surface,
+        color: isPast ? Colors.orange.withValues(alpha: 0.08) : scheme.surface,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isPast
-              ? Colors.orange.withOpacity(0.4)
-              : scheme.outlineVariant.withOpacity(0.3),
+              ? Colors.orange.withValues(alpha: 0.4)
+              : scheme.outlineVariant.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -844,7 +905,7 @@ class _HomeScreenState extends State<HomeScreen>
             child: Icon(
               Icons.close,
               size: 16,
-              color: scheme.onSurface.withOpacity(0.4),
+              color: scheme.onSurface.withValues(alpha: 0.4),
             ),
           ),
         ],
@@ -885,7 +946,7 @@ class _HomeScreenState extends State<HomeScreen>
         children: [
           CircleAvatar(
             radius: 14,
-            backgroundColor: const Color(0xFF534AB7).withOpacity(0.15),
+            backgroundColor: const Color(0xFF534AB7).withValues(alpha: 0.15),
             child: const Text(
               'Z',
               style: TextStyle(
@@ -925,15 +986,21 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildListeningBanner() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      color: const Color(0xFFFFF3E0),
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E0).withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(18),
+        border:
+            Border.all(color: const Color(0xFFE65100).withValues(alpha: 0.2)),
+      ),
       child: Row(
         children: [
           _PulseDot(),
           const SizedBox(width: 10),
           const Expanded(
             child: Text(
-              'Listening... release mic to send',
+              'Listening... auto-sends after a quiet pause',
               style: TextStyle(color: Color(0xFFE65100), fontSize: 13),
             ),
           ),
@@ -964,7 +1031,10 @@ class _HomeScreenState extends State<HomeScreen>
         itemBuilder: (_, i) {
           final chip = _suggestions[i];
           return GestureDetector(
-            onTap: () => _send(chip),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              _send(chip);
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -984,117 +1054,124 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildInputRow(ColorScheme scheme) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        border: Border(
-          top: BorderSide(color: scheme.outlineVariant.withOpacity(0.3)),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Mic button
-          GestureDetector(
-            onTap: _speechAvailable
-                ? null
-                : () => _addBotMessage(
-                      "Microphone isn't available. Check mic permissions in Settings.",
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: scheme.surface.withValues(alpha: 0.88),
+            border: Border(
+              top: BorderSide(
+                  color: scheme.outlineVariant.withValues(alpha: 0.3)),
+            ),
+          ),
+          child: Row(
+            children: [
+              // Mic button
+              GestureDetector(
+                onTap: _speechAvailable
+                    ? _toggleVoiceInput
+                    : () => _addBotMessage(
+                          "Microphone isn't available. Check mic permissions in Settings.",
+                        ),
+                child: ScaleTransition(
+                  scale: _micScale,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _isListening
+                          ? const Color(0xFFFFF3E0)
+                          : scheme.surfaceContainerHighest,
+                      border: Border.all(
+                        color: _isListening
+                            ? const Color(0xFFE65100)
+                            : scheme.outlineVariant.withValues(alpha: 0.4),
+                      ),
+                      boxShadow: _isListening
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFFE65100)
+                                    .withValues(alpha: 0.25),
+                                blurRadius: 18,
+                                spreadRadius: 3,
+                              ),
+                            ]
+                          : null,
                     ),
-            onLongPressStart: (_) => _startListening(),
-            onLongPressEnd: (_) => _stopListening(send: true),
-            onLongPressCancel: () => _stopListening(send: false),
-            child: ScaleTransition(
-              scale: _micScale,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _isListening
-                      ? const Color(0xFFFFF3E0)
-                      : scheme.surfaceContainerHighest,
-                  border: Border.all(
-                    color: _isListening
-                        ? const Color(0xFFE65100)
-                        : scheme.outlineVariant.withOpacity(0.4),
+                    child: Icon(
+                      _isListening
+                          ? Icons.mic
+                          : (_speechAvailable ? Icons.mic_none : Icons.mic_off),
+                      size: 20,
+                      color: _isListening
+                          ? const Color(0xFFE65100)
+                          : _speechAvailable
+                              ? scheme.onSurface.withValues(alpha: 0.6)
+                              : scheme.onSurface.withValues(alpha: 0.3),
+                    ),
                   ),
-                  boxShadow: _isListening
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFFE65100).withOpacity(0.25),
-                            blurRadius: 18,
-                            spreadRadius: 3,
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Icon(
-                  _isListening
-                      ? Icons.mic
-                      : (_speechAvailable ? Icons.mic_none : Icons.mic_off),
-                  size: 20,
-                  color: _isListening
-                      ? const Color(0xFFE65100)
-                      : _speechAvailable
-                          ? scheme.onSurface.withOpacity(0.6)
-                          : scheme.onSurface.withOpacity(0.3),
                 ),
               ),
-            ),
+              const SizedBox(width: 8),
+              // Text input
+              Expanded(
+                child: TextField(
+                  controller: _inputCtrl,
+                  onSubmitted: (_) => _send(),
+                  keyboardType: TextInputType.multiline,
+                  textInputAction: TextInputAction.newline,
+                  minLines: 1,
+                  maxLines: 5,
+                  enabled: !_isLoading,
+                  style: const TextStyle(fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'Say or type anything...',
+                    hintStyle: TextStyle(
+                      color: scheme.onSurface.withValues(alpha: 0.4),
+                      fontSize: 14,
+                    ),
+                    filled: true,
+                    fillColor: scheme.surfaceContainerHighest,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    isDense: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Send button
+              GestureDetector(
+                onTap: _isLoading ? null : _send,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _isLoading
+                        ? const Color(0xFF534AB7).withValues(alpha: 0.5)
+                        : const Color(0xFF534AB7),
+                  ),
+                  child: const Icon(
+                    Icons.send_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          // Text input
-          Expanded(
-            child: TextField(
-              controller: _inputCtrl,
-              onSubmitted: (_) => _send(),
-              textInputAction: TextInputAction.send,
-              enabled: !_isLoading,
-              style: const TextStyle(fontSize: 14),
-              decoration: InputDecoration(
-                hintText: 'Say or type anything...',
-                hintStyle: TextStyle(
-                  color: scheme.onSurface.withOpacity(0.4),
-                  fontSize: 14,
-                ),
-                filled: true,
-                fillColor: scheme.surfaceContainerHighest,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                isDense: true,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Send button
-          GestureDetector(
-            onTap: _isLoading ? null : _send,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _isLoading
-                    ? const Color(0xFF534AB7).withOpacity(0.5)
-                    : const Color(0xFF534AB7),
-              ),
-              child: const Icon(
-                Icons.send_rounded,
-                color: Colors.white,
-                size: 18,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1148,7 +1225,8 @@ class _BounceDotState extends State<_BounceDot>
           height: 6,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+            color:
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
           ),
         ),
       ),
