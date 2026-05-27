@@ -149,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen>
       }
     });
     await StorageService.saveReminders(_reminders);
-    unawaited(BackendService.syncReminders(_reminders));
+    unawaited(_syncRemindersToBackend());
   }
 
   void _startCountdown() {
@@ -244,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen>
       _reminders.add(newReminder);
       await _scheduleReminder(newReminder);
       await StorageService.saveReminders(_reminders);
-      unawaited(BackendService.upsertReminder(newReminder));
+      unawaited(_upsertReminderToBackend(newReminder));
       _claude.clearHistory();
     } else if (res.action == 'delete_reminder') {
       final reminder = _findReminderByName(res.reminder?.name);
@@ -432,7 +432,7 @@ class _HomeScreenState extends State<HomeScreen>
       final next = _reminders[index].nextOccurrence();
       _safeSetState(() => _reminders[index] = next);
       await _scheduleReminder(next);
-      unawaited(BackendService.upsertReminder(next));
+      unawaited(_upsertReminderToBackend(next));
     } else {
       final completed = _reminders[index];
       completed.fired = true;
@@ -440,7 +440,7 @@ class _HomeScreenState extends State<HomeScreen>
       unawaited(BackendService.deleteReminder(completed.id));
     }
     await StorageService.saveReminders(_reminders);
-    unawaited(BackendService.syncReminders(_reminders));
+    unawaited(_syncRemindersToBackend());
     _claude.clearHistory();
     _addBotMessage(
       action == 'taken'
@@ -480,7 +480,7 @@ class _HomeScreenState extends State<HomeScreen>
     _safeSetState(() => _reminders[index] = next);
     await _scheduleReminder(next);
     await StorageService.saveReminders(_reminders);
-    unawaited(BackendService.upsertReminder(next));
+    unawaited(_upsertReminderToBackend(next));
     _claude.clearHistory();
   }
 
@@ -605,6 +605,22 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _deleteReminder(Reminder r) async {
     HapticFeedback.mediumImpact();
     await _deleteReminderInternal(r);
+  }
+
+  Future<void> _syncRemindersToBackend() async {
+    final result = await BackendService.syncReminders(_reminders);
+    if (!result.skipped && !result.success) {
+      debugPrint(
+        'Zam backend sync failed for ${result.failedIds.length}/${result.attempted} reminders.',
+      );
+    }
+  }
+
+  Future<void> _upsertReminderToBackend(Reminder reminder) async {
+    final synced = await BackendService.upsertReminder(reminder);
+    if (!synced && BackendService.isConfigured) {
+      debugPrint('Zam backend upsert failed for reminder ${reminder.id}.');
+    }
   }
 
   Future<void> _deleteReminderInternal(

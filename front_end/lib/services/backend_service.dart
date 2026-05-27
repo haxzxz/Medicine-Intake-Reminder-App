@@ -61,25 +61,55 @@ class BackendService {
     }
   }
 
-  static Future<void> syncReminders(List<Reminder> reminders) async {
-    if (!isConfigured) return;
-    for (final reminder in reminders) {
-      unawaited(upsertReminder(reminder));
+  static Future<BackendSyncResult> syncReminders(
+    List<Reminder> reminders,
+  ) async {
+    if (!isConfigured) return const BackendSyncResult.skipped();
+    final failures = <int, String>{};
+
+    await Future.wait(
+      reminders.map((reminder) async {
+        try {
+          final synced = await upsertReminder(reminder);
+          if (!synced) {
+            failures[reminder.id] = 'Request failed';
+          }
+        } catch (e) {
+          failures[reminder.id] = e.toString();
+        }
+      }),
+    );
+
+    if (failures.isNotEmpty) {
+      debugPrint('Backend sync failed for reminder ids: ${failures.keys}');
     }
+    return BackendSyncResult(
+      attempted: reminders.length,
+      failedIds: failures.keys.toList(),
+      errorsById: failures,
+    );
   }
 
-  static Future<void> upsertReminder(Reminder reminder) async {
-    if (!isConfigured) return;
+  static Future<bool> upsertReminder(Reminder reminder) async {
+    if (!isConfigured) return false;
     try {
-      await http
+      final res = await http
           .put(
             Uri.parse('$_baseUrl/api/reminders/${reminder.id}'),
             headers: await _headers(),
             body: jsonEncode(reminder.toJson()),
           )
           .timeout(const Duration(seconds: 10));
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        debugPrint(
+          'Backend upsert reminder failed: ${res.statusCode} ${res.body}',
+        );
+        return false;
+      }
+      return true;
     } catch (e) {
       debugPrint('Backend upsert reminder failed: $e');
+      return false;
     }
   }
 
@@ -125,4 +155,26 @@ class BackendService {
       debugPrint('Backend append log failed: $e');
     }
   }
+}
+
+class BackendSyncResult {
+  final int attempted;
+  final List<int> failedIds;
+  final Map<int, String> errorsById;
+  final bool skipped;
+
+  const BackendSyncResult({
+    required this.attempted,
+    required this.failedIds,
+    required this.errorsById,
+    this.skipped = false,
+  });
+
+  const BackendSyncResult.skipped()
+      : attempted = 0,
+        failedIds = const [],
+        errorsById = const {},
+        skipped = true;
+
+  bool get success => failedIds.isEmpty;
 }
