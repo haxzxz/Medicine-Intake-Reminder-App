@@ -249,7 +249,6 @@ PERSONALITY: casual, warm, brief. Don't repeat reminder details (the card shows 
         {'text': req.userMessage},
       ],
     });
-    _trimHistory();
 
     try {
       final response = await http
@@ -307,6 +306,7 @@ PERSONALITY: casual, warm, brief. Don't repeat reminder details (the card shows 
           {'text': rawText},
         ],
       });
+      _trimHistory();
 
       try {
         final clean = rawText.replaceAll(RegExp(r'```json|```'), '').trim();
@@ -396,7 +396,8 @@ PERSONALITY: casual, warm, brief. Don't repeat reminder details (the card shows 
     final maxMessages = _maxHistoryTurns * 2;
     if (_history.length > maxMessages) {
       final excess = _history.length - maxMessages;
-      _history.removeRange(0, excess % 2 == 0 ? excess : excess + 1);
+      final removeCount = excess.isEven ? excess : excess + 1;
+      _history.removeRange(0, removeCount.clamp(0, _history.length));
     }
   }
 
