@@ -58,7 +58,8 @@ class ReminderIntent {
 class GeminiService {
   static String get _apiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
 
-  static String get _model => dotenv.env['GEMINI_MODEL'] ?? 'gemini-2.0-flash';
+  static String get _model =>
+      dotenv.env['GEMINI_MODEL'] ?? 'gemini-flash-lite-latest';
 
   static String get _backendUrl {
     final raw = dotenv.env['BACKEND_URL']?.trim() ?? '';
