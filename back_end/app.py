@@ -388,7 +388,7 @@ def _gemini_error_message(res):
     if res.status_code == 429:
         return "Gemini quota is currently exhausted for this backend key/model."
     if res.status_code == 403:
-        return "Gemini rejected the backend API key. Check key restrictions and API access."
+        return "Gemini rejected the backend API key. Create a new Gemini key in Google AI Studio, put it only in Render GEMINI_API_KEY, then redeploy."
     return message or f"Gemini error {res.status_code}"
 
 

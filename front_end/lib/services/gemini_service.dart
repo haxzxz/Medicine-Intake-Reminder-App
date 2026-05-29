@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
 import '../models/reminder.dart';
 import 'auth_service.dart';
 
@@ -57,20 +56,12 @@ class ReminderIntent {
 }
 
 class GeminiService {
-  static String get _apiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
-
-  static String get _model =>
-      dotenv.env['GEMINI_MODEL'] ?? 'gemini-flash-lite-latest';
-
   static String get _backendUrl {
     final raw = dotenv.env['BACKEND_URL']?.trim() ?? '';
     if (raw.isEmpty || raw == '*') return '';
     if (raw.endsWith('/')) return raw.substring(0, raw.length - 1);
     return raw;
   }
-
-  static String get _url =>
-      'https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent?key=$_apiKey';
 
   // ── Rate limiting: per-instance cooldown ───────────────────────────────────
   // Minimum gap between requests — prevents bursting even if the user types fast
@@ -81,102 +72,7 @@ class GeminiService {
   bool _requestInFlight = false;
   final List<_QueuedRequest> _queue = [];
 
-  // Conversation history — trimmed to last 8 turns to save tokens
-  final List<Map<String, dynamic>> _history = [];
-  static const int _maxHistoryTurns = 8;
-
-  // ── System prompt ──────────────────────────────────────────────────────────
-
-  String _buildSystemPrompt(List<Reminder> reminders) {
-    final now = DateTime.now();
-    final timeFmt = DateFormat('h:mm a');
-    final dateFmt = DateFormat('EEEE, MMMM d, yyyy');
-
-    final activeReminders = reminders.isEmpty
-        ? 'None'
-        : reminders.map(
-            (r) {
-              final status = r.fired
-                  ? 'taken/completed'
-                  : r.isPast
-                      ? 'due now'
-                      : 'pending';
-              return '- id ${r.id}: ${r.medicineName} at ${timeFmt.format(r.time)} (${r.timeUntilLabel}, status $status, repeats ${r.recurrence})';
-            },
-          ).join('\n');
-
-    return '''You are Zam, a warm, smart, casual AI medicine reminder assistant.
-Today is ${dateFmt.format(now)}, current time is ${timeFmt.format(now)}.
-
-ACTIVE REMINDERS:
-$activeReminders
-
-IMPORTANT STATE RULE:
-- ACTIVE REMINDERS is the source of truth. If it says None, tell the user they have no active reminders.
-- Ignore older conversation messages that imply a reminder is still active when ACTIVE REMINDERS no longer lists it.
-- Completed/taken/missed reminders are history, not active reminders.
-
-YOUR CAPABILITIES:
-1. SET REMINDERS — understand casual language: "pills 8ish", "meds tonite 9", "biogesic 7pm", "metformin daily at 8"
-2. MANAGE REMINDERS — "what do I have set?", "clear everything", "delete vitamin reminder", "snooze biogesic 10 minutes"
-3. HEALTH INFO — brief helpful tips (food interactions, storage, timing). Say "consult your doctor" for symptoms.
-4. CONVERSATION MEMORY — remember everything said this session; handle follow-ups naturally
-
-SCOPE RULE:
-- If the user asks about unrelated topics like coding, sports, politics, entertainment, homework, travel, finance, weather, jokes, or general trivia, politely say you only specialize in medicine information, medicine intakes, and medicine reminders.
-- Do not answer unrelated questions. Offer to help with medicine reminders or medicine intake questions instead.
-
-RESPONSE FORMAT — respond ONLY with valid JSON, no markdown, no backticks:
-{
-  "message": "warm brief reply, 2-3 sentences. Use \\n for newlines. Emoji ok.",
-  "action": null,
-  "reminder": null,
-  "suggestions": ["chip 1", "chip 2", "chip 3"]
-}
-
-To set a reminder at a clock time:
-{ "message": "...", "action": "set_reminder", "reminder": { "name": "Medicine Name", "time": "HH:MM", "recurrence": "none" }, "suggestions": [...] }
-
-To set a relative reminder:
-{ "message": "...", "action": "set_reminder", "reminder": { "name": "Medicine Name", "time": "00:00", "delayMinutes": 1, "recurrence": "none" }, "suggestions": [...] }
-
-To set a recurring reminder, use recurrence "daily" or "weekly".
-
-To delete one reminder by name:
-{ "message": "...", "action": "delete_reminder", "reminder": { "name": "Medicine Name", "time": "00:00", "recurrence": "none" }, "suggestions": [...] }
-
-To delete all:
-{ "message": "...", "action": "delete_all", "reminder": null, "suggestions": [...] }
-
-To snooze one reminder:
-{ "message": "...", "action": "snooze_reminder", "reminder": { "name": "Medicine Name", "time": "00:00", "recurrence": "none", "snoozeMinutes": 10 }, "suggestions": [...] }
-
-TIME RULES:
-- If the user says "remind me in X minutes", "2 mins", "in 2 mins", or any short relative time phrase, treat it as SET REMINDER, not a reminder-status question.
-- If the user asks for a reminder but does not name medicine, set name to "Medicine" instead of asking a follow-up, unless the time is missing.
-- If the previous user message asked to set a medicine reminder and the current message only gives a time like "2 mins" or "8 pm", complete that reminder using the prior medicine name.
-- For "in X minute(s)" or "after X minute(s)", ALWAYS use delayMinutes instead of rounding to HH:MM.
-- "8ish" → 08:00 if morning context, 20:00 if evening context
-- "tonight/evening/pm" → PM hours
-- "morning" → 08:00, "noon/lunch" → 12:00, "night/bedtime" → 21:00, "after dinner" → 19:00
-- Bare 1-6 → assume PM. Bare 7-11 → prefer AM unless context says PM
-- Always output 24-hour "HH:MM"
-- When asked to check reminders, list only pending/due reminders as active. Do not call taken/completed reminders "set".
-
-MEDICINE NAME RULES:
-- Extract real name: "Biogesic", "Vitamin C", "Metformin"
-- "my pills/meds" with no name → "Medicine"
-- Capitalise correctly
-- For delete/snooze, use the closest active reminder name from ACTIVE REMINDERS
-
-RECURRENCE RULES:
-- "every day", "daily", "each morning/night" → recurrence "daily"
-- "weekly", "every week", "every Monday" → recurrence "weekly"
-- Otherwise recurrence "none"
-- Snooze defaults to 10 minutes if the user does not specify
-
-PERSONALITY: casual, warm, brief. Don't repeat reminder details (the card shows them).''';
-  }
+  // Gemini calls must go through backend so API key is never inside APK.
 
   // ── Public chat method ─────────────────────────────────────────────────────
 
@@ -203,7 +99,7 @@ PERSONALITY: casual, warm, brief. Don't repeat reminder details (the card shows 
     return completer.future;
   }
 
-  void clearHistory() => _history.clear();
+  void clearHistory() {}
 
   // ── Queue ──────────────────────────────────────────────────────────────────
 
@@ -242,106 +138,12 @@ PERSONALITY: casual, warm, brief. Don't repeat reminder details (the card shows 
 
   Future<ZamResponse> _doRequest(_QueuedRequest req) async {
     _lastRequestTime = DateTime.now();
-
-    if (_backendUrl.isNotEmpty) {
-      return _doBackendRequest(req);
-    }
-
-    if (_apiKey.isEmpty) {
+    if (_backendUrl.isEmpty) {
       return ZamResponse.error(
-        "Gemini isn't configured yet. Add GEMINI_API_KEY to the app's .env file.",
+        'Backend is not configured. Set BACKEND_URL in front_end/.env.',
       );
     }
-
-    _history.add({
-      'role': 'user',
-      'parts': [
-        {'text': req.userMessage},
-      ],
-    });
-
-    try {
-      final response = await http
-          .post(
-            Uri.parse(_url),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'system_instruction': {
-                'parts': [
-                  {'text': _buildSystemPrompt(req.reminders)},
-                ],
-              },
-              'contents': _history,
-              'generationConfig': {
-                'temperature': 0.7,
-                'maxOutputTokens': 500, // Keep short to save quota
-                'responseMimeType': 'application/json',
-              },
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 429) {
-        _history.removeLast();
-        return ZamResponse.error(_quotaErrorMessage(response.body));
-      }
-      if (response.statusCode == 400) {
-        _history.removeLast();
-        final err = jsonDecode(response.body);
-        final msg = err['error']?['message'] as String? ?? 'Bad request';
-        return ZamResponse.error("Gemini error: $msg");
-      }
-      if (response.statusCode == 403) {
-        _history.removeLast();
-        return ZamResponse.error(_apiKeyErrorMessage(response.body));
-      }
-      if (response.statusCode != 200) {
-        _history.removeLast();
-        return ZamResponse.error("Gemini error ${response.statusCode}");
-      }
-
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      final candidates = body['candidates'] as List?;
-      if (candidates == null || candidates.isEmpty) {
-        _history.removeLast();
-        return ZamResponse.error("Empty response. Try again.");
-      }
-
-      final rawText =
-          candidates[0]['content']?['parts']?[0]?['text'] as String? ?? '';
-
-      _history.add({
-        'role': 'model',
-        'parts': [
-          {'text': rawText},
-        ],
-      });
-      _trimHistory();
-
-      try {
-        final clean = rawText.replaceAll(RegExp(r'```json|```'), '').trim();
-        final parsed = jsonDecode(clean) as Map<String, dynamic>;
-
-        return _parseZamResponse(parsed, fallbackMessage: rawText);
-      } catch (e) {
-        debugPrint('JSON parse error: $e\nRaw: $rawText');
-        return ZamResponse(message: rawText);
-      }
-    } on TimeoutException {
-      _history.removeLast();
-      return ZamResponse.error("Request timed out. Check your internet.");
-    } on SocketException {
-      _history.removeLast();
-      return ZamResponse.error(
-        "You're offline right now. Check your internet connection, then try again.",
-      );
-    } catch (e) {
-      _history.removeLast();
-      debugPrint('Gemini error: $e');
-      return ZamResponse.error(
-        "Could not reach Gemini. Check your connection.",
-      );
-    }
+    return _doBackendRequest(req);
   }
 
   // ── Trim history ───────────────────────────────────────────────────────────
@@ -409,51 +211,6 @@ PERSONALITY: casual, warm, brief. Don't repeat reminder details (the card shows 
       suggestions: suggestions,
       error: parsed['error'] as String?,
     );
-  }
-
-  void _trimHistory() {
-    final maxMessages = _maxHistoryTurns * 2;
-    if (_history.length > maxMessages) {
-      final excess = _history.length - maxMessages;
-      final removeCount = excess.isEven ? excess : excess + 1;
-      _history.removeRange(0, removeCount.clamp(0, _history.length));
-    }
-  }
-
-  String _apiKeyErrorMessage(String responseBody) {
-    try {
-      final err = jsonDecode(responseBody) as Map<String, dynamic>;
-      final message = err['error']?['message'] as String? ?? '';
-      if (message.contains('Android client application <empty>')) {
-        return "Gemini rejected the API key because it is restricted to Android apps. In Google Cloud, set the key's application restriction to None, or route Gemini calls through a backend.";
-      }
-      if (message.toLowerCase().contains('api key not valid')) {
-        return 'Gemini rejected the API key. Check that GEMINI_API_KEY is current and copied into front_end/.env.';
-      }
-      if (message.isNotEmpty) {
-        return 'Gemini API key error: $message';
-      }
-    } catch (_) {}
-    return 'Gemini API key issue. Check the key restrictions in Google Cloud.';
-  }
-
-  String _quotaErrorMessage(String responseBody) {
-    try {
-      final err = jsonDecode(responseBody) as Map<String, dynamic>;
-      final message = err['error']?['message'] as String? ?? '';
-      final retryMatch =
-          RegExp(r'Please retry in ([^.\n]+)').firstMatch(message);
-      final retry =
-          retryMatch == null ? '' : ' Try again in ${retryMatch.group(1)}.';
-
-      if (message.contains('limit: 0')) {
-        return "Gemini says this API key has no free quota available for $_model right now.$retry You can switch GEMINI_MODEL to gemini-flash-lite-latest or enable billing/quota in Google AI Studio.";
-      }
-      if (message.isNotEmpty) {
-        return 'Gemini quota limit reached.$retry';
-      }
-    } catch (_) {}
-    return 'Gemini quota limit reached. Please wait a bit and try again.';
   }
 }
 
