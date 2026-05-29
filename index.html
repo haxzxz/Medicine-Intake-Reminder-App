@@ -27,12 +27,53 @@
       --muted: #7A6E8A;
       --bg: #FDF8FF;
       --grad: linear-gradient(135deg, #7B8FE0 0%, #C87BC4 50%, #F48BB0 100%);
+      --glass: rgba(255, 255, 255, .66);
+      --glass-strong: rgba(255, 255, 255, .82);
+      --glass-border: rgba(255, 255, 255, .72);
+      --shadow-soft: 0 22px 70px rgba(92, 67, 128, .13);
+      --ease-premium: cubic-bezier(.22, 1, .36, 1);
+    }
+
+    body[data-theme="dark"] {
+      --soft-pink: rgba(244, 139, 176, .13);
+      --soft-blue: rgba(123, 143, 224, .14);
+      --text: #F8F2FF;
+      --muted: #C8BBD8;
+      --mid: #F2A4DE;
+      --bg: #15111F;
+      --glass: rgba(35, 28, 50, .64);
+      --glass-strong: rgba(42, 34, 60, .82);
+      --glass-border: rgba(255, 255, 255, .12);
+      --shadow-soft: 0 24px 80px rgba(0, 0, 0, .32);
+      background: linear-gradient(180deg, rgba(22, 17, 34, .94), rgba(36, 27, 52, .96));
+    }
+
+    html {
+      scroll-behavior: smooth
     }
 
     body {
       font-family: 'DM Sans', sans-serif;
-      background: var(--bg);
-      color: var(--text)
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .72), rgba(253, 248, 255, .88)),
+        var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      line-height: 1.6
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: .28;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E")
+    }
+
+    body[data-theme="dark"]::before {
+      opacity: .22
     }
 
     /* NAV */
@@ -40,13 +81,19 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 1rem 2.5rem;
-      background: rgba(253, 248, 255, 0.93);
-      backdrop-filter: blur(14px);
-      border-bottom: 1px solid rgba(196, 136, 196, 0.15);
+      width: min(1120px, calc(100% - 32px));
+      margin: 16px auto 0;
+      padding: .85rem 1.1rem;
+      background: var(--glass);
+      backdrop-filter: blur(22px) saturate(160%);
+      -webkit-backdrop-filter: blur(22px) saturate(160%);
+      border: 1px solid var(--glass-border);
+      border-radius: 28px;
       position: sticky;
-      top: 0;
-      z-index: 100
+      top: 14px;
+      z-index: 100;
+      box-shadow: var(--shadow-soft);
+      transition: background .35s var(--ease-premium), border-color .35s var(--ease-premium), box-shadow .35s var(--ease-premium)
     }
 
     .nav-logo {
@@ -66,6 +113,12 @@
       object-fit: cover
     }
 
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
     .nav-links {
       display: flex;
       gap: 2rem;
@@ -77,7 +130,8 @@
       color: var(--muted);
       font-size: 14px;
       font-weight: 500;
-      transition: color .2s
+      cursor: pointer;
+      transition: color .25s var(--ease-premium)
     }
 
     .nav-links a:hover {
@@ -94,13 +148,37 @@
       font-weight: 600;
       cursor: pointer;
       font-family: 'DM Sans', sans-serif;
-      transition: opacity .2s, transform .2s;
-      text-decoration: none
+      transition: opacity .25s var(--ease-premium), transform .25s var(--ease-premium), box-shadow .25s var(--ease-premium);
+      text-decoration: none;
+      box-shadow: 0 10px 28px rgba(196, 136, 196, .25)
     }
 
     .btn-nav:hover {
       opacity: .9;
-      transform: translateY(-1px)
+      transform: translateY(-2px);
+      box-shadow: 0 16px 34px rgba(196, 136, 196, .3)
+    }
+
+    .theme-toggle {
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(196, 136, 196, .22);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .55);
+      color: var(--text);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-size: 17px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: transform .25s var(--ease-premium), background .25s var(--ease-premium), border-color .25s var(--ease-premium)
+    }
+
+    .theme-toggle:hover {
+      transform: translateY(-2px);
+      background: var(--glass-strong);
+      border-color: rgba(196, 136, 196, .36)
     }
 
     /* HERO */
@@ -111,7 +189,17 @@
       align-items: center;
       max-width: 1100px;
       margin: 0 auto;
-      padding: 6rem 2.5rem 5rem
+      padding: 6.5rem 2.5rem 5rem;
+      position: relative
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 24px 2rem auto 2rem;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(196, 136, 196, .32), transparent);
+      pointer-events: none
     }
 
     .hero-badge {
@@ -119,6 +207,8 @@
       align-items: center;
       gap: 6px;
       background: var(--soft-pink);
+      border: 1px solid rgba(244, 139, 176, .25);
+      box-shadow: 0 10px 24px rgba(244, 139, 176, .12);
       color: var(--mid);
       font-size: 11px;
       font-weight: 700;
@@ -126,7 +216,8 @@
       border-radius: 20px;
       margin-bottom: 1.25rem;
       letter-spacing: .8px;
-      text-transform: uppercase
+      text-transform: uppercase;
+      animation: fadeUp .7s .05s both
     }
 
     h1 {
@@ -134,7 +225,8 @@
       font-size: 50px;
       line-height: 1.12;
       color: var(--text);
-      margin-bottom: 1.25rem
+      margin-bottom: 1.25rem;
+      animation: fadeUp .7s .12s both
     }
 
     h1 span {
@@ -149,13 +241,15 @@
       color: var(--muted);
       line-height: 1.75;
       margin-bottom: 2.25rem;
-      max-width: 440px
+      max-width: 440px;
+      animation: fadeUp .7s .2s both
     }
 
     .hero-btns {
       display: flex;
       gap: 12px;
-      flex-wrap: wrap
+      flex-wrap: wrap;
+      animation: fadeUp .7s .28s both
     }
 
     .btn-primary {
@@ -171,17 +265,21 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      transition: opacity .2s, transform .2s;
-      text-decoration: none
+      transition: opacity .25s var(--ease-premium), transform .25s var(--ease-premium), box-shadow .25s var(--ease-premium);
+      text-decoration: none;
+      box-shadow: 0 14px 34px rgba(196, 136, 196, .24)
     }
 
     .btn-primary:hover {
       opacity: .9;
-      transform: translateY(-2px)
+      transform: translateY(-3px);
+      box-shadow: 0 20px 44px rgba(196, 136, 196, .3)
     }
 
     .btn-outline {
-      background: white;
+      background: var(--glass);
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
       color: var(--mid);
       border: 1.5px solid rgba(196, 136, 196, .4);
       padding: 13px 28px;
@@ -192,13 +290,16 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      transition: border-color .2s, transform .2s;
-      text-decoration: none
+      cursor: pointer;
+      transition: border-color .25s var(--ease-premium), transform .25s var(--ease-premium), box-shadow .25s var(--ease-premium);
+      text-decoration: none;
+      box-shadow: 0 10px 26px rgba(92, 67, 128, .08)
     }
 
     .btn-outline:hover {
       border-color: var(--pink);
-      transform: translateY(-2px)
+      transform: translateY(-3px);
+      box-shadow: 0 16px 36px rgba(92, 67, 128, .12)
     }
 
     /* HERO VISUAL */
@@ -221,7 +322,8 @@
       width: 210px;
       height: 210px;
       object-fit: contain;
-      filter: drop-shadow(0 24px 55px rgba(196, 136, 196, .4))
+      filter: drop-shadow(0 24px 55px rgba(196, 136, 196, .4));
+      animation: floatLogo 5.5s ease-in-out infinite
     }
 
     .hero-stat-row {
@@ -230,12 +332,20 @@
     }
 
     .hero-stat {
-      background: white;
+      background: var(--glass);
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
       border-radius: 16px;
       padding: 13px 18px;
       text-align: center;
-      border: 1px solid rgba(196, 136, 196, .15);
-      box-shadow: 0 6px 24px rgba(196, 136, 196, .12)
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 12px 34px rgba(196, 136, 196, .15);
+      transition: transform .3s var(--ease-premium), box-shadow .3s var(--ease-premium)
+    }
+
+    .hero-stat:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 18px 40px rgba(196, 136, 196, .2)
     }
 
     .hero-stat-num {
@@ -256,7 +366,9 @@
 
     .float-tag {
       position: absolute;
-      background: white;
+      background: var(--glass-strong);
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
       border-radius: 13px;
       padding: 8px 14px;
       box-shadow: 0 4px 20px rgba(196, 136, 196, .22);
@@ -268,7 +380,8 @@
       align-items: center;
       gap: 6px;
       white-space: nowrap;
-      animation: ft 3s ease-in-out infinite
+      animation: ft 3s ease-in-out infinite;
+      box-shadow: 0 14px 36px rgba(196, 136, 196, .18)
     }
 
     .ft1 {
@@ -284,15 +397,13 @@
     }
 
     @keyframes ft {
+      0%, 100% { transform: translateY(0) }
+      50% { transform: translateY(-8px) }
+    }
 
-      0%,
-      100% {
-        transform: translateY(0)
-      }
-
-      50% {
-        transform: translateY(-8px)
-      }
+    @keyframes floatLogo {
+      0%, 100% { transform: translateY(0) }
+      50% { transform: translateY(-10px) }
     }
 
     /* SECTION SHARED */
@@ -316,7 +427,9 @@
 
     /* ABOUT */
     .about {
-      background: white;
+      background: rgba(255, 255, 255, .42);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
       border-top: 1px solid rgba(196, 136, 196, .1);
       padding: 5rem 2.5rem
     }
@@ -350,16 +463,20 @@
     }
 
     .feat-card {
-      background: white;
+      background: var(--glass);
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
       border-radius: 22px;
       padding: 28px 24px;
-      border: 1px solid rgba(196, 136, 196, .14);
-      transition: transform .2s, box-shadow .2s
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 14px 42px rgba(92, 67, 128, .08);
+      transition: transform .32s var(--ease-premium), box-shadow .32s var(--ease-premium), background .32s var(--ease-premium)
     }
 
     .feat-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 12px 36px rgba(196, 136, 196, .18)
+      transform: translateY(-7px);
+      background: var(--glass-strong);
+      box-shadow: 0 24px 60px rgba(196, 136, 196, .18)
     }
 
     .feat-icon {
@@ -373,16 +490,12 @@
       margin-bottom: 16px
     }
 
-    .fi-blue {
-      background: var(--soft-blue)
-    }
+    .fi-blue { background: var(--soft-blue) }
+    .fi-pink { background: var(--soft-pink) }
+    .fi-purple { background: #F0EEFF }
 
-    .fi-pink {
-      background: var(--soft-pink)
-    }
-
-    .fi-purple {
-      background: #F0EEFF
+    body[data-theme="dark"] .fi-purple {
+      background: rgba(155, 123, 224, .18)
     }
 
     .feat-card h3 {
@@ -413,7 +526,9 @@
 
     /* HOW IT WORKS */
     .how {
-      background: white;
+      background: rgba(255, 255, 255, .42);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
       border-top: 1px solid rgba(196, 136, 196, .1);
       padding: 5rem 2.5rem
     }
@@ -464,7 +579,13 @@
       align-items: center;
       justify-content: center;
       margin-bottom: 14px;
-      box-shadow: 0 4px 18px rgba(196, 136, 196, .35)
+      box-shadow: 0 4px 18px rgba(196, 136, 196, .35);
+      transition: transform .3s var(--ease-premium), box-shadow .3s var(--ease-premium)
+    }
+
+    .step:hover .step-num {
+      transform: translateY(-4px) scale(1.04);
+      box-shadow: 0 12px 28px rgba(196, 136, 196, .36)
     }
 
     .step h3 {
@@ -497,14 +618,22 @@
     }
 
     .dl-card {
-      background: white;
+      background: var(--glass);
+      backdrop-filter: blur(22px) saturate(150%);
+      -webkit-backdrop-filter: blur(22px) saturate(150%);
       border-radius: 26px;
       padding: 44px 52px;
       text-align: center;
-      border: 2px solid var(--blue);
+      border: 1px solid var(--glass-border);
       max-width: 420px;
       width: 100%;
-      box-shadow: 0 14px 50px rgba(123, 143, 224, .17)
+      box-shadow: 0 24px 80px rgba(123, 143, 224, .17);
+      transition: transform .32s var(--ease-premium), box-shadow .32s var(--ease-premium)
+    }
+
+    .dl-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 34px 90px rgba(123, 143, 224, .22)
     }
 
     .dl-badge {
@@ -579,7 +708,9 @@
 
     /* INSTALL GUIDE */
     .install {
-      background: white;
+      background: rgba(255, 255, 255, .42);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
       border-top: 1px solid rgba(196, 136, 196, .1);
       padding: 4.5rem 2.5rem
     }
@@ -600,10 +731,19 @@
       display: flex;
       align-items: flex-start;
       gap: 16px;
-      background: var(--bg);
+      background: var(--glass);
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
       border-radius: 16px;
       padding: 18px 20px;
-      border: 1px solid rgba(196, 136, 196, .13)
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 12px 32px rgba(92, 67, 128, .08);
+      transition: transform .3s var(--ease-premium), box-shadow .3s var(--ease-premium)
+    }
+
+    .install-step:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 46px rgba(92, 67, 128, .13)
     }
 
     .is-num {
@@ -650,13 +790,15 @@
     }
 
     .req-single {
-      background: white;
+      background: var(--glass);
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
       border-radius: 20px;
       padding: 30px 36px;
       max-width: 420px;
       margin: 2rem auto 0;
-      border: 1px solid rgba(196, 136, 196, .18);
-      box-shadow: 0 4px 20px rgba(196, 136, 196, .1)
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-soft)
     }
 
     .req-single h3 {
@@ -696,7 +838,7 @@
 
     /* FOOTER */
     footer {
-      background: var(--text);
+      background: rgba(45, 35, 64, .96);
       color: rgba(255, 255, 255, .65);
       padding: 2.5rem 2rem;
       text-align: center;
@@ -735,28 +877,81 @@
       margin: 10px 0
     }
 
-    .mobile-copy {
-      display: none
+    /* ─── DARK MODE OVERRIDES ─── */
+
+    body[data-theme="dark"] .about,
+    body[data-theme="dark"] .how,
+    body[data-theme="dark"] .install {
+      background: rgba(22, 17, 34, .38)
     }
 
-    /* RESPONSIVE */
+    body[data-theme="dark"] .btn-outline,
+    body[data-theme="dark"] .theme-toggle {
+      background: rgba(255, 255, 255, .08);
+      border-color: rgba(255, 255, 255, .14)
+    }
+
+    body[data-theme="dark"] footer {
+      background: rgba(12, 9, 18, .96)
+    }
+
+    /* FIX: How It Works steps — white background in dark mode */
+    body[data-theme="dark"] .step {
+      background: var(--glass);
+      border-color: rgba(255, 255, 255, .1)
+    }
+
+    /* FIX: Install steps text color consistency in dark mode */
+    body[data-theme="dark"] .is-text code {
+      background: rgba(123, 143, 224, .2);
+      color: #A8B8F0
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px) }
+      to { opacity: 1; transform: translateY(0) }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity .75s var(--ease-premium), transform .75s var(--ease-premium)
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0)
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .001ms !important
+      }
+      .reveal {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    /* ─── RESPONSIVE ─── */
     @media(max-width:768px) {
       nav {
-        padding: .75rem 1rem
+        width: min(100% - 20px, 1120px);
+        margin-top: 10px;
+        padding: .65rem .75rem;
+        top: 10px
       }
 
-      .nav-logo {
-        font-size: 18px
-      }
+      .nav-logo { font-size: 18px }
+      .nav-logo img { width: 34px; height: 34px }
 
-      .nav-logo img {
-        width: 34px;
-        height: 34px
-      }
-
+      /* FIX: btn-nav mobile — use aria-label instead of CSS content trick */
       .btn-nav {
-        padding: 8px 14px;
-        font-size: 0;
+        padding: 0;
+        font-size: 18px;
         width: 42px;
         height: 42px;
         border-radius: 50%;
@@ -764,10 +959,7 @@
         place-items: center
       }
 
-      .btn-nav::before {
-        content: "⬇";
-        font-size: 18px
-      }
+      .theme-toggle { width: 42px; height: 42px }
 
       .hero {
         grid-template-columns: 1fr;
@@ -783,21 +975,15 @@
         margin-bottom: 1.35rem
       }
 
-      .desktop-copy {
-        display: none
-      }
-
-      .mobile-copy {
-        display: inline
-      }
+      .desktop-copy { display: none }
+      .mobile-copy { display: inline }
 
       .hero-btns {
         justify-content: center;
         gap: 10px
       }
 
-      .btn-primary,
-      .btn-outline {
+      .btn-primary, .btn-outline {
         min-height: 46px;
         padding: 12px 18px;
         font-size: 14px
@@ -825,21 +1011,11 @@
         border-radius: 18px
       }
 
-      .hero-stat-num {
-        font-size: 18px
-      }
+      .hero-stat-num { font-size: 18px }
+      .hero-stat-label { font-size: 10px }
+      .float-tag { display: none }
 
-      .hero-stat-label {
-        font-size: 10px
-      }
-
-      .float-tag {
-        display: none
-      }
-
-      h1 {
-        font-size: 34px
-      }
+      h1 { font-size: 34px }
 
       h2 {
         font-size: 28px;
@@ -851,16 +1027,9 @@
         margin-bottom: .85rem
       }
 
-      .nav-links {
-        display: none
-      }
+      .nav-links { display: none }
 
-      .about,
-      .features,
-      .how,
-      .download,
-      .install,
-      .sysreq {
+      .about, .features, .how, .download, .install, .sysreq {
         padding: 3rem 1rem
       }
 
@@ -893,14 +1062,8 @@
         margin-bottom: 0
       }
 
-      .feat-card h3 {
-        margin: 0;
-        font-size: 16px
-      }
-
-      .feat-card p {
-        display: none
-      }
+      .feat-card h3 { margin: 0; font-size: 16px }
+      .feat-card p { display: none }
 
       .feat-tag {
         width: fit-content;
@@ -910,15 +1073,14 @@
         margin-top: 0
       }
 
+      /* FIX: steps — mobile layout now uses glass bg, inherits dark mode correctly */
       .steps {
         flex-direction: column;
         gap: 12px;
         margin-top: 1.5rem
       }
 
-      .steps::before {
-        display: none
-      }
+      .steps::before { display: none }
 
       .step {
         display: grid;
@@ -926,8 +1088,8 @@
         text-align: left;
         gap: 4px 12px;
         align-items: center;
-        background: white;
-        border: 1px solid rgba(196, 136, 196, .16);
+        background: var(--glass);
+        border: 1px solid var(--glass-border);
         border-radius: 18px;
         padding: 14px
       }
@@ -940,14 +1102,8 @@
         font-size: 16px
       }
 
-      .step h3 {
-        margin: 0;
-        font-size: 15px
-      }
-
-      .step p {
-        display: none
-      }
+      .step h3 { margin: 0; font-size: 15px }
+      .step p { display: none }
 
       .dl-card {
         padding: 26px 18px;
@@ -965,14 +1121,8 @@
         margin-bottom: 14px
       }
 
-      .dl-title {
-        font-size: 24px
-      }
-
-      .dl-sub,
-      .dl-size {
-        font-size: 13px
-      }
+      .dl-title { font-size: 24px }
+      .dl-sub, .dl-size { font-size: 13px }
 
       .btn-dl {
         width: 100%;
@@ -980,28 +1130,10 @@
         padding: 14px 18px
       }
 
-      .dl-note {
-        font-size: 0;
-        line-height: 1;
-        display: flex;
-        justify-content: center;
-        gap: 8px;
-        flex-wrap: wrap
-      }
+      /* FIX: dl-note — removed hacky font-size:0 pseudo-content trick */
+      .dl-note { font-size: 12px }
 
-      .dl-note::before {
-        content: "Free";
-        font-size: 12px
-      }
-
-      .dl-note::after {
-        content: "No ads";
-        font-size: 12px
-      }
-
-      .install-steps {
-        gap: 12px
-      }
+      .install-steps { gap: 12px }
 
       .install-step {
         padding: 14px;
@@ -1014,17 +1146,10 @@
         font-size: 14px
       }
 
-      .is-text h4 {
-        font-size: 15px
-      }
+      .is-text h4 { font-size: 15px }
+      .is-text p { display: none }
 
-      .is-text p {
-        display: none
-      }
-
-      .req-single {
-        padding: 20px
-      }
+      .req-single { padding: 20px }
 
       .req-single ul {
         display: grid;
@@ -1034,27 +1159,19 @@
         text-align: center
       }
 
-      footer {
-        padding: 2.5rem 1rem
-      }
+      footer { padding: 2.5rem 1rem }
     }
 
     @media(max-width:380px) {
-      h1 {
-        font-size: 30px
-      }
-
-      h2 {
-        font-size: 25px
-      }
+      h1 { font-size: 30px }
+      h2 { font-size: 25px }
 
       .hero-badge {
         padding: 5px 10px;
         letter-spacing: .4px
       }
 
-      .btn-primary,
-      .btn-outline {
+      .btn-primary, .btn-outline {
         width: 100%;
         justify-content: center
       }
@@ -1075,14 +1192,9 @@
         font-size: 20px
       }
 
-      .step,
-      .install-step {
-        gap: 4px 10px
-      }
+      .step, .install-step { gap: 4px 10px }
 
-      .dl-card {
-        padding: 24px 14px
-      }
+      .dl-card { padding: 24px 14px }
     }
   </style>
 </head>
@@ -1092,9 +1204,7 @@
   <!-- NAV -->
   <nav>
     <a class="nav-logo" href="#">
-      <img
-        src="./icon.png"
-        alt="Zam Logo">
+      <img src="./icon.png" alt="Zam Logo">
       Zam
     </a>
     <ul class="nav-links">
@@ -1103,7 +1213,11 @@
       <li><a href="#how">How it works</a></li>
       <li><a href="#download">Download</a></li>
     </ul>
-    <a class="btn-nav" href="#download">⬇ Download Free</a>
+    <div class="nav-actions">
+      <button class="theme-toggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">☾</button>
+      <!-- FIX: aria-label carries the text for screen readers; visible label set via JS on mobile -->
+      <a class="btn-nav" href="#download" aria-label="Download Free">⬇</a>
+    </div>
   </nav>
 
   <!-- HERO -->
@@ -1123,9 +1237,7 @@
     </div>
     <div class="hero-visual">
       <div class="hero-logo-wrap">
-        <img class="hero-logo-img"
-          src="./icon.png"
-          alt="Zam App Icon">
+        <img class="hero-logo-img" src="./icon.png" alt="Zam App Icon">
         <div class="hero-stat-row">
           <div class="hero-stat">
             <div class="hero-stat-num">100%</div>
@@ -1242,16 +1354,15 @@
     <div class="download-inner">
       <p class="section-label">Download</p>
       <h2>Get Zam for Android</h2>
-      <p style="text-align:center;font-size:15px;color:var(--muted);margin-top:-0.5rem;">Free to download. No account
-        required.</p>
+      <p style="text-align:center;font-size:15px;color:var(--muted);margin-top:-0.5rem;">Free to download. No account required.</p>
       <div class="dl-center">
         <div class="dl-card">
           <div class="dl-badge">Free Download</div>
           <div class="dl-icon">📱</div>
           <div class="dl-title">Android</div>
           <div class="dl-sub">Requires Android 12 or higher</div>
-          <div class="dl-size">Version 1.0.0 &nbsp;·&nbsp; ~22 MB &nbsp;·&nbsp; APK file</div>
-          <a href="downloads/zam-latest.apk" class="btn-dl btn-dl-grad" download>
+          <div class="dl-size">Version 1.0.0 &nbsp;·&nbsp; ~60 MB &nbsp;·&nbsp; APK file</div>
+          <a href="downloads/app-release.apk" class="btn-dl btn-dl-grad" download>
             ⬇ &nbsp;Download APK
           </a>
         </div>
@@ -1270,24 +1381,21 @@
           <div class="is-num">1</div>
           <div class="is-text">
             <h4>Download the APK file</h4>
-            <p>Tap <strong>Download APK</strong> above. The file will be saved to your phone's <code>Downloads</code>
-              folder.</p>
+            <p>Tap <strong>Download APK</strong> above. The file will be saved to your phone's <code>Downloads</code> folder.</p>
           </div>
         </div>
         <div class="install-step">
           <div class="is-num">2</div>
           <div class="is-text">
             <h4>Allow installation from unknown sources</h4>
-            <p>Go to <code>Settings → Security</code> (or <code>Privacy</code>) and enable <strong>Install unknown
-                apps</strong> for your browser or file manager.</p>
+            <p>Go to <code>Settings → Security</code> (or <code>Privacy</code>) and enable <strong>Install unknown apps</strong> for your browser or file manager.</p>
           </div>
         </div>
         <div class="install-step">
           <div class="is-num">3</div>
           <div class="is-text">
             <h4>Open the APK file</h4>
-            <p>Open your <code>Downloads</code> folder, tap <strong>Zam.apk</strong>, and follow the on-screen
-              prompts to install.</p>
+            <p>Open your <code>Downloads</code> folder, tap <strong>app-release.apk</strong>, and follow the on-screen prompts to install.</p>
           </div>
         </div>
         <div class="install-step">
@@ -1319,9 +1427,7 @@
   <!-- FOOTER -->
   <footer>
     <div class="footer-logo">
-      <img
-        src="./icon.png"
-        alt="Zam Logo">
+      <img src="./icon.png" alt="Zam Logo">
       Zam
     </div>
     <p>Your voice-powered medicine companion.</p>
@@ -1333,6 +1439,52 @@
     <p style="margin-top:10px;font-size:12px;opacity:.4;">© 2026 Zam. All rights reserved.</p>
   </footer>
 
-</body>
+  <script>
+    const themeToggle = document.querySelector('.theme-toggle');
+    const btnNav = document.querySelector('.btn-nav');
 
+    function setTheme(theme) {
+      document.body.dataset.theme = theme;
+      const isDark = theme === 'dark';
+      themeToggle.textContent = isDark ? '☀' : '☾';
+      themeToggle.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+      themeToggle.setAttribute('aria-pressed', String(isDark));
+      localStorage.setItem('zam-theme', theme);
+    }
+
+    // FIX: read savedTheme after DOM is ready (script is deferred by being at end of body)
+    const savedTheme = localStorage.getItem('zam-theme');
+    setTheme(savedTheme || 'light');
+
+    // FIX: btn-nav — restore full label on desktop, keep icon-only on mobile via CSS
+    function updateBtnNavLabel() {
+      const isMobile = window.innerWidth <= 768;
+      btnNav.textContent = isMobile ? '⬇' : '⬇ Download Free';
+    }
+    updateBtnNavLabel();
+    window.addEventListener('resize', updateBtnNavLabel);
+
+    themeToggle.addEventListener('click', () => {
+      setTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark');
+    });
+
+    const revealTargets = document.querySelectorAll(
+      '.about-inner, .feat-card, .how-inner > .section-label, .how-inner > h2, .step, .download-inner, .install-step, .sysreq, footer'
+    );
+
+    revealTargets.forEach((target) => target.classList.add('reveal'));
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+
+    document.querySelectorAll('.reveal').forEach((target) => observer.observe(target));
+  </script>
+
+</body>
 </html>
