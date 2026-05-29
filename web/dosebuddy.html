@@ -1,419 +1,1337 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DoseBuddy — Your Voice-Powered Medicine Companion</title>
+  <title>Zam — Your Voice-Powered Medicine Companion</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap"
+    rel="stylesheet">
   <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    :root{
-      --pink:#F48BB0;--blue:#7B8FE0;--soft-pink:#FDE8F1;--soft-blue:#EAF0FD;
-      --mid:#C87BC4;--text:#2D2340;--muted:#7A6E8A;--bg:#FDF8FF;
-      --grad:linear-gradient(135deg,#7B8FE0 0%,#C87BC4 50%,#F48BB0 100%);
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
     }
-    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text)}
+
+    :root {
+      --pink: #F48BB0;
+      --blue: #7B8FE0;
+      --soft-pink: #FDE8F1;
+      --soft-blue: #EAF0FD;
+      --mid: #C87BC4;
+      --text: #2D2340;
+      --muted: #7A6E8A;
+      --bg: #FDF8FF;
+      --grad: linear-gradient(135deg, #7B8FE0 0%, #C87BC4 50%, #F48BB0 100%);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text)
+    }
 
     /* NAV */
-    nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 2.5rem;
-      background:rgba(253,248,255,0.93);backdrop-filter:blur(14px);
-      border-bottom:1px solid rgba(196,136,196,0.15);position:sticky;top:0;z-index:100}
-    .nav-logo{display:flex;align-items:center;gap:10px;font-family:'DM Serif Display',serif;
-      font-size:21px;color:var(--text);text-decoration:none}
-    .nav-logo img{width:38px;height:38px;border-radius:12px;object-fit:cover}
-    .nav-links{display:flex;gap:2rem;list-style:none}
-    .nav-links a{text-decoration:none;color:var(--muted);font-size:14px;font-weight:500;transition:color .2s}
-    .nav-links a:hover{color:var(--text)}
-    .btn-nav{background:var(--grad);color:white;border:none;padding:9px 22px;border-radius:20px;
-      font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;
-      transition:opacity .2s,transform .2s;text-decoration:none}
-    .btn-nav:hover{opacity:.9;transform:translateY(-1px)}
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2.5rem;
+      background: rgba(253, 248, 255, 0.93);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(196, 136, 196, 0.15);
+      position: sticky;
+      top: 0;
+      z-index: 100
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'DM Serif Display', serif;
+      font-size: 21px;
+      color: var(--text);
+      text-decoration: none
+    }
+
+    .nav-logo img {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      object-fit: cover
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+      transition: color .2s
+    }
+
+    .nav-links a:hover {
+      color: var(--text)
+    }
+
+    .btn-nav {
+      background: var(--grad);
+      color: white;
+      border: none;
+      padding: 9px 22px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: opacity .2s, transform .2s;
+      text-decoration: none
+    }
+
+    .btn-nav:hover {
+      opacity: .9;
+      transform: translateY(-1px)
+    }
 
     /* HERO */
-    .hero{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;
-      max-width:1100px;margin:0 auto;padding:6rem 2.5rem 5rem}
-    .hero-badge{display:inline-flex;align-items:center;gap:6px;background:var(--soft-pink);
-      color:var(--mid);font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;
-      margin-bottom:1.25rem;letter-spacing:.8px;text-transform:uppercase}
-    h1{font-family:'DM Serif Display',serif;font-size:50px;line-height:1.12;
-      color:var(--text);margin-bottom:1.25rem}
-    h1 span{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-    .hero-desc{font-size:16px;color:var(--muted);line-height:1.75;margin-bottom:2.25rem;max-width:440px}
-    .hero-btns{display:flex;gap:12px;flex-wrap:wrap}
-    .btn-primary{background:var(--grad);color:white;border:none;padding:14px 30px;border-radius:30px;
-      font-size:15px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;
-      display:flex;align-items:center;gap:8px;transition:opacity .2s,transform .2s;text-decoration:none}
-    .btn-primary:hover{opacity:.9;transform:translateY(-2px)}
-    .btn-outline{background:white;color:var(--mid);border:1.5px solid rgba(196,136,196,.4);
-      padding:13px 28px;border-radius:30px;font-size:15px;font-weight:500;
-      font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:8px;
-      transition:border-color .2s,transform .2s;text-decoration:none}
-    .btn-outline:hover{border-color:var(--pink);transform:translateY(-2px)}
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: center;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 6rem 2.5rem 5rem
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--soft-pink);
+      color: var(--mid);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 20px;
+      margin-bottom: 1.25rem;
+      letter-spacing: .8px;
+      text-transform: uppercase
+    }
+
+    h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 50px;
+      line-height: 1.12;
+      color: var(--text);
+      margin-bottom: 1.25rem
+    }
+
+    h1 span {
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text
+    }
+
+    .hero-desc {
+      font-size: 16px;
+      color: var(--muted);
+      line-height: 1.75;
+      margin-bottom: 2.25rem;
+      max-width: 440px
+    }
+
+    .hero-btns {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap
+    }
+
+    .btn-primary {
+      background: var(--grad);
+      color: white;
+      border: none;
+      padding: 14px 30px;
+      border-radius: 30px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: opacity .2s, transform .2s;
+      text-decoration: none
+    }
+
+    .btn-primary:hover {
+      opacity: .9;
+      transform: translateY(-2px)
+    }
+
+    .btn-outline {
+      background: white;
+      color: var(--mid);
+      border: 1.5px solid rgba(196, 136, 196, .4);
+      padding: 13px 28px;
+      border-radius: 30px;
+      font-size: 15px;
+      font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: border-color .2s, transform .2s;
+      text-decoration: none
+    }
+
+    .btn-outline:hover {
+      border-color: var(--pink);
+      transform: translateY(-2px)
+    }
 
     /* HERO VISUAL */
-    .hero-visual{display:flex;justify-content:center;align-items:center;position:relative;padding:20px}
-    .hero-logo-wrap{display:flex;flex-direction:column;align-items:center;gap:28px}
-    .hero-logo-img{width:210px;height:210px;object-fit:contain;
-      filter:drop-shadow(0 24px 55px rgba(196,136,196,.4))}
-    .hero-stat-row{display:flex;gap:14px}
-    .hero-stat{background:white;border-radius:16px;padding:13px 18px;text-align:center;
-      border:1px solid rgba(196,136,196,.15);box-shadow:0 6px 24px rgba(196,136,196,.12)}
-    .hero-stat-num{font-family:'DM Serif Display',serif;font-size:22px;
-      background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-    .hero-stat-label{font-size:11px;color:var(--muted);margin-top:3px;font-weight:500}
-    .float-tag{position:absolute;background:white;border-radius:13px;padding:8px 14px;
-      box-shadow:0 4px 20px rgba(196,136,196,.22);border:1px solid rgba(196,136,196,.15);
-      font-size:12px;font-weight:600;color:var(--text);display:flex;align-items:center;
-      gap:6px;white-space:nowrap;animation:ft 3s ease-in-out infinite}
-    .ft1{top:10px;right:-10px;animation-delay:0s}
-    .ft2{bottom:20px;left:-10px;animation-delay:1.5s}
-    @keyframes ft{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    .hero-visual {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      padding: 20px
+    }
+
+    .hero-logo-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px
+    }
+
+    .hero-logo-img {
+      width: 210px;
+      height: 210px;
+      object-fit: contain;
+      filter: drop-shadow(0 24px 55px rgba(196, 136, 196, .4))
+    }
+
+    .hero-stat-row {
+      display: flex;
+      gap: 14px
+    }
+
+    .hero-stat {
+      background: white;
+      border-radius: 16px;
+      padding: 13px 18px;
+      text-align: center;
+      border: 1px solid rgba(196, 136, 196, .15);
+      box-shadow: 0 6px 24px rgba(196, 136, 196, .12)
+    }
+
+    .hero-stat-num {
+      font-family: 'DM Serif Display', serif;
+      font-size: 22px;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text
+    }
+
+    .hero-stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+      font-weight: 500
+    }
+
+    .float-tag {
+      position: absolute;
+      background: white;
+      border-radius: 13px;
+      padding: 8px 14px;
+      box-shadow: 0 4px 20px rgba(196, 136, 196, .22);
+      border: 1px solid rgba(196, 136, 196, .15);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      animation: ft 3s ease-in-out infinite
+    }
+
+    .ft1 {
+      top: 10px;
+      right: -10px;
+      animation-delay: 0s
+    }
+
+    .ft2 {
+      bottom: 20px;
+      left: -10px;
+      animation-delay: 1.5s
+    }
+
+    @keyframes ft {
+
+      0%,
+      100% {
+        transform: translateY(0)
+      }
+
+      50% {
+        transform: translateY(-8px)
+      }
+    }
 
     /* SECTION SHARED */
-    .section-label{text-align:center;font-size:11px;font-weight:700;letter-spacing:1.2px;
-      text-transform:uppercase;color:var(--mid);margin-bottom:10px}
-    h2{font-family:'DM Serif Display',serif;font-size:36px;text-align:center;
-      color:var(--text);margin-bottom:1rem}
+    .section-label {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--mid);
+      margin-bottom: 10px
+    }
+
+    h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 36px;
+      text-align: center;
+      color: var(--text);
+      margin-bottom: 1rem
+    }
 
     /* ABOUT */
-    .about{background:white;border-top:1px solid rgba(196,136,196,.1);padding:5rem 2.5rem}
-    .about-inner{max-width:940px;margin:0 auto}
-    .about-lead{text-align:center;font-size:16px;color:var(--muted);line-height:1.75;
-      max-width:680px;margin:0 auto 3.5rem}
+    .about {
+      background: white;
+      border-top: 1px solid rgba(196, 136, 196, .1);
+      padding: 5rem 2.5rem
+    }
+
+    .about-inner {
+      max-width: 940px;
+      margin: 0 auto
+    }
+
+    .about-lead {
+      text-align: center;
+      font-size: 16px;
+      color: var(--muted);
+      line-height: 1.75;
+      max-width: 680px;
+      margin: 0 auto 3.5rem
+    }
 
     /* FEATURES */
-    .features{padding:5rem 2.5rem;max-width:940px;margin:0 auto}
-    .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:2.5rem}
-    .feat-card{background:white;border-radius:22px;padding:28px 24px;
-      border:1px solid rgba(196,136,196,.14);transition:transform .2s,box-shadow .2s}
-    .feat-card:hover{transform:translateY(-5px);box-shadow:0 12px 36px rgba(196,136,196,.18)}
-    .feat-icon{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;
-      justify-content:center;font-size:26px;margin-bottom:16px}
-    .fi-blue{background:var(--soft-blue)}
-    .fi-pink{background:var(--soft-pink)}
-    .fi-purple{background:#F0EEFF}
-    .feat-card h3{font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px}
-    .feat-card p{font-size:14px;color:var(--muted);line-height:1.65}
-    .feat-tag{display:inline-flex;align-items:center;gap:5px;margin-top:14px;
-      background:var(--soft-blue);color:var(--blue);font-size:11px;font-weight:600;
-      padding:4px 10px;border-radius:10px}
+    .features {
+      padding: 5rem 2.5rem;
+      max-width: 940px;
+      margin: 0 auto
+    }
+
+    .feat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-top: 2.5rem
+    }
+
+    .feat-card {
+      background: white;
+      border-radius: 22px;
+      padding: 28px 24px;
+      border: 1px solid rgba(196, 136, 196, .14);
+      transition: transform .2s, box-shadow .2s
+    }
+
+    .feat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 36px rgba(196, 136, 196, .18)
+    }
+
+    .feat-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      margin-bottom: 16px
+    }
+
+    .fi-blue {
+      background: var(--soft-blue)
+    }
+
+    .fi-pink {
+      background: var(--soft-pink)
+    }
+
+    .fi-purple {
+      background: #F0EEFF
+    }
+
+    .feat-card h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px
+    }
+
+    .feat-card p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.65
+    }
+
+    .feat-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 14px;
+      background: var(--soft-blue);
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 10px
+    }
 
     /* HOW IT WORKS */
-    .how{background:white;border-top:1px solid rgba(196,136,196,.1);padding:5rem 2.5rem}
-    .how-inner{max-width:940px;margin:0 auto}
-    .steps{display:flex;gap:0;margin-top:2.5rem;position:relative}
-    .steps::before{content:'';position:absolute;top:28px;left:28px;right:28px;height:2px;
-      background:var(--grad);z-index:0}
-    .step{flex:1;display:flex;flex-direction:column;align-items:center;
-      text-align:center;padding:0 1rem;position:relative;z-index:1}
-    .step-num{width:56px;height:56px;border-radius:50%;background:var(--grad);color:white;
-      font-family:'DM Serif Display',serif;font-size:22px;display:flex;align-items:center;
-      justify-content:center;margin-bottom:14px;box-shadow:0 4px 18px rgba(196,136,196,.35)}
-    .step h3{font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px}
-    .step p{font-size:13px;color:var(--muted);line-height:1.6}
+    .how {
+      background: white;
+      border-top: 1px solid rgba(196, 136, 196, .1);
+      padding: 5rem 2.5rem
+    }
+
+    .how-inner {
+      max-width: 940px;
+      margin: 0 auto
+    }
+
+    .steps {
+      display: flex;
+      gap: 0;
+      margin-top: 2.5rem;
+      position: relative
+    }
+
+    .steps::before {
+      content: '';
+      position: absolute;
+      top: 28px;
+      left: 28px;
+      right: 28px;
+      height: 2px;
+      background: var(--grad);
+      z-index: 0
+    }
+
+    .step {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 0 1rem;
+      position: relative;
+      z-index: 1
+    }
+
+    .step-num {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--grad);
+      color: white;
+      font-family: 'DM Serif Display', serif;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 18px rgba(196, 136, 196, .35)
+    }
+
+    .step h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px
+    }
+
+    .step p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6
+    }
 
     /* DOWNLOAD */
-    .download{padding:5rem 2.5rem}
-    .download-inner{max-width:940px;margin:0 auto}
-    .dl-center{display:flex;justify-content:center;margin-top:2.5rem}
-    .dl-card{background:white;border-radius:26px;padding:44px 52px;text-align:center;
-      border:2px solid var(--blue);max-width:420px;width:100%;
-      box-shadow:0 14px 50px rgba(123,143,224,.17)}
-    .dl-badge{display:inline-block;background:var(--soft-blue);color:var(--blue);
-      font-size:12px;font-weight:700;padding:4px 14px;border-radius:12px;margin-bottom:16px}
-    .dl-icon{font-size:56px;margin-bottom:14px}
-    .dl-title{font-family:'DM Serif Display',serif;font-size:28px;color:var(--text);margin-bottom:4px}
-    .dl-sub{font-size:14px;color:var(--muted);margin-bottom:6px}
-    .dl-size{font-size:13px;color:rgba(122,110,138,.5);margin-bottom:28px}
-    .btn-dl{width:100%;padding:15px;border-radius:16px;font-size:16px;font-weight:700;
-      cursor:pointer;font-family:'DM Sans',sans-serif;border:none;
-      display:flex;align-items:center;justify-content:center;gap:9px;
-      transition:opacity .2s,transform .15s;text-decoration:none}
-    .btn-dl-grad{background:var(--grad);color:white;box-shadow:0 6px 22px rgba(196,136,196,.32)}
-    .btn-dl:hover{opacity:.9;transform:translateY(-2px)}
-    .dl-note{text-align:center;font-size:13px;color:var(--muted);margin-top:20px}
+    .download {
+      padding: 5rem 2.5rem
+    }
+
+    .download-inner {
+      max-width: 940px;
+      margin: 0 auto
+    }
+
+    .dl-center {
+      display: flex;
+      justify-content: center;
+      margin-top: 2.5rem
+    }
+
+    .dl-card {
+      background: white;
+      border-radius: 26px;
+      padding: 44px 52px;
+      text-align: center;
+      border: 2px solid var(--blue);
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 14px 50px rgba(123, 143, 224, .17)
+    }
+
+    .dl-badge {
+      display: inline-block;
+      background: var(--soft-blue);
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 12px;
+      margin-bottom: 16px
+    }
+
+    .dl-icon {
+      font-size: 56px;
+      margin-bottom: 14px
+    }
+
+    .dl-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 28px;
+      color: var(--text);
+      margin-bottom: 4px
+    }
+
+    .dl-sub {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 6px
+    }
+
+    .dl-size {
+      font-size: 13px;
+      color: rgba(122, 110, 138, .5);
+      margin-bottom: 28px
+    }
+
+    .btn-dl {
+      width: 100%;
+      padding: 15px;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      transition: opacity .2s, transform .15s;
+      text-decoration: none
+    }
+
+    .btn-dl-grad {
+      background: var(--grad);
+      color: white;
+      box-shadow: 0 6px 22px rgba(196, 136, 196, .32)
+    }
+
+    .btn-dl:hover {
+      opacity: .9;
+      transform: translateY(-2px)
+    }
+
+    .dl-note {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 20px
+    }
 
     /* INSTALL GUIDE */
-    .install{background:white;border-top:1px solid rgba(196,136,196,.1);padding:4.5rem 2.5rem}
-    .install-inner{max-width:680px;margin:0 auto}
-    .install-steps{display:flex;flex-direction:column;gap:14px;margin-top:2rem}
-    .install-step{display:flex;align-items:flex-start;gap:16px;background:var(--bg);
-      border-radius:16px;padding:18px 20px;border:1px solid rgba(196,136,196,.13)}
-    .is-num{width:36px;height:36px;border-radius:50%;background:var(--grad);color:white;
-      font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-    .is-text h4{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
-    .is-text p{font-size:13px;color:var(--muted);line-height:1.6}
-    .is-text code{background:var(--soft-blue);color:var(--blue);
-      font-size:12px;padding:2px 7px;border-radius:6px;font-family:monospace}
+    .install {
+      background: white;
+      border-top: 1px solid rgba(196, 136, 196, .1);
+      padding: 4.5rem 2.5rem
+    }
+
+    .install-inner {
+      max-width: 680px;
+      margin: 0 auto
+    }
+
+    .install-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 2rem
+    }
+
+    .install-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      background: var(--bg);
+      border-radius: 16px;
+      padding: 18px 20px;
+      border: 1px solid rgba(196, 136, 196, .13)
+    }
+
+    .is-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--grad);
+      color: white;
+      font-weight: 700;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0
+    }
+
+    .is-text h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px
+    }
+
+    .is-text p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6
+    }
+
+    .is-text code {
+      background: var(--soft-blue);
+      color: var(--blue);
+      font-size: 12px;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-family: monospace
+    }
 
     /* SYSTEM REQUIREMENTS */
-    .sysreq{padding:4rem 2.5rem;max-width:940px;margin:0 auto}
-    .req-single{background:white;border-radius:20px;padding:30px 36px;max-width:420px;margin:2rem auto 0;
-      border:1px solid rgba(196,136,196,.18);box-shadow:0 4px 20px rgba(196,136,196,.1)}
-    .req-single h3{font-size:15px;font-weight:700;color:var(--text);
-      margin-bottom:14px;display:flex;align-items:center;gap:8px}
-    .req-single ul{list-style:none}
-    .req-single ul li{font-size:14px;color:var(--muted);padding:7px 0;
-      border-bottom:1px solid rgba(196,136,196,.1);display:flex;align-items:center;gap:8px}
-    .req-single ul li:last-child{border-bottom:none}
-    .req-single ul li::before{content:'·';color:var(--pink);font-size:20px;line-height:1}
+    .sysreq {
+      padding: 4rem 2.5rem;
+      max-width: 940px;
+      margin: 0 auto
+    }
+
+    .req-single {
+      background: white;
+      border-radius: 20px;
+      padding: 30px 36px;
+      max-width: 420px;
+      margin: 2rem auto 0;
+      border: 1px solid rgba(196, 136, 196, .18);
+      box-shadow: 0 4px 20px rgba(196, 136, 196, .1)
+    }
+
+    .req-single h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .req-single ul {
+      list-style: none
+    }
+
+    .req-single ul li {
+      font-size: 14px;
+      color: var(--muted);
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(196, 136, 196, .1);
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .req-single ul li:last-child {
+      border-bottom: none
+    }
+
+    .req-single ul li::before {
+      content: '·';
+      color: var(--pink);
+      font-size: 20px;
+      line-height: 1
+    }
 
     /* FOOTER */
-    footer{background:var(--text);color:rgba(255,255,255,.65);
-      padding:2.5rem 2rem;text-align:center;font-size:13px}
-    .footer-logo{display:flex;align-items:center;justify-content:center;gap:10px;
-      font-family:'DM Serif Display',serif;font-size:21px;color:white;margin-bottom:8px}
-    .footer-logo img{width:32px;height:32px;border-radius:9px;object-fit:cover}
-    footer a{color:rgba(255,255,255,.5);text-decoration:none;margin:0 8px}
-    footer a:hover{color:white}
-    .footer-links{margin:10px 0}
+    footer {
+      background: var(--text);
+      color: rgba(255, 255, 255, .65);
+      padding: 2.5rem 2rem;
+      text-align: center;
+      font-size: 13px
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-family: 'DM Serif Display', serif;
+      font-size: 21px;
+      color: white;
+      margin-bottom: 8px
+    }
+
+    .footer-logo img {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      object-fit: cover
+    }
+
+    footer a {
+      color: rgba(255, 255, 255, .5);
+      text-decoration: none;
+      margin: 0 8px
+    }
+
+    footer a:hover {
+      color: white
+    }
+
+    .footer-links {
+      margin: 10px 0
+    }
+
+    .mobile-copy {
+      display: none
+    }
 
     /* RESPONSIVE */
-    @media(max-width:768px){
-      .hero{grid-template-columns:1fr;padding:3rem 1.5rem;text-align:center}
-      .hero-desc{max-width:100%}
-      .hero-btns{justify-content:center}
-      .hero-visual{margin-top:2rem}
-      .float-tag{display:none}
-      h1{font-size:34px}
-      .nav-links{display:none}
-      .feat-grid{grid-template-columns:1fr}
-      .steps{flex-direction:column;gap:2rem}
-      .steps::before{display:none}
-      .dl-card{padding:32px 24px}
+    @media(max-width:768px) {
+      nav {
+        padding: .75rem 1rem
+      }
+
+      .nav-logo {
+        font-size: 18px
+      }
+
+      .nav-logo img {
+        width: 34px;
+        height: 34px
+      }
+
+      .btn-nav {
+        padding: 8px 14px;
+        font-size: 0;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center
+      }
+
+      .btn-nav::before {
+        content: "⬇";
+        font-size: 18px
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+        padding: 2.25rem 1rem 2rem;
+        text-align: center
+      }
+
+      .hero-desc {
+        max-width: 100%;
+        font-size: 14px;
+        line-height: 1.55;
+        margin-bottom: 1.35rem
+      }
+
+      .desktop-copy {
+        display: none
+      }
+
+      .mobile-copy {
+        display: inline
+      }
+
+      .hero-btns {
+        justify-content: center;
+        gap: 10px
+      }
+
+      .btn-primary,
+      .btn-outline {
+        min-height: 46px;
+        padding: 12px 18px;
+        font-size: 14px
+      }
+
+      .hero-visual {
+        margin-top: .5rem;
+        padding: 0
+      }
+
+      .hero-logo-img {
+        width: 128px;
+        border-radius: 30px
+      }
+
+      .hero-stat-row {
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center
+      }
+
+      .hero-stat {
+        width: 82px;
+        padding: 11px 10px;
+        border-radius: 18px
+      }
+
+      .hero-stat-num {
+        font-size: 18px
+      }
+
+      .hero-stat-label {
+        font-size: 10px
+      }
+
+      .float-tag {
+        display: none
+      }
+
+      h1 {
+        font-size: 34px
+      }
+
+      h2 {
+        font-size: 28px;
+        line-height: 1.15
+      }
+
+      .hero-badge {
+        font-size: 10px;
+        margin-bottom: .85rem
+      }
+
+      .nav-links {
+        display: none
+      }
+
+      .about,
+      .features,
+      .how,
+      .download,
+      .install,
+      .sysreq {
+        padding: 3rem 1rem
+      }
+
+      .about-lead {
+        font-size: 14px;
+        line-height: 1.6;
+        margin-top: 1rem
+      }
+
+      .feat-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-top: 1.5rem
+      }
+
+      .feat-card {
+        display: grid;
+        grid-template-columns: 52px 1fr;
+        gap: 4px 12px;
+        align-items: center;
+        padding: 16px;
+        border-radius: 18px
+      }
+
+      .feat-icon {
+        grid-row: span 2;
+        width: 48px;
+        height: 48px;
+        font-size: 22px;
+        margin-bottom: 0
+      }
+
+      .feat-card h3 {
+        margin: 0;
+        font-size: 16px
+      }
+
+      .feat-card p {
+        display: none
+      }
+
+      .feat-tag {
+        width: fit-content;
+        max-width: 100%;
+        font-size: 11px;
+        white-space: normal;
+        margin-top: 0
+      }
+
+      .steps {
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 1.5rem
+      }
+
+      .steps::before {
+        display: none
+      }
+
+      .step {
+        display: grid;
+        grid-template-columns: 44px 1fr;
+        text-align: left;
+        gap: 4px 12px;
+        align-items: center;
+        background: white;
+        border: 1px solid rgba(196, 136, 196, .16);
+        border-radius: 18px;
+        padding: 14px
+      }
+
+      .step-num {
+        grid-row: span 2;
+        width: 42px;
+        height: 42px;
+        margin: 0;
+        font-size: 16px
+      }
+
+      .step h3 {
+        margin: 0;
+        font-size: 15px
+      }
+
+      .step p {
+        display: none
+      }
+
+      .dl-card {
+        padding: 26px 18px;
+        border-radius: 24px
+      }
+
+      .dl-icon {
+        width: 70px;
+        height: 70px;
+        display: grid;
+        place-items: center;
+        margin-left: auto;
+        margin-right: auto;
+        font-size: 34px;
+        margin-bottom: 14px
+      }
+
+      .dl-title {
+        font-size: 24px
+      }
+
+      .dl-sub,
+      .dl-size {
+        font-size: 13px
+      }
+
+      .btn-dl {
+        width: 100%;
+        justify-content: center;
+        padding: 14px 18px
+      }
+
+      .dl-note {
+        font-size: 0;
+        line-height: 1;
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        flex-wrap: wrap
+      }
+
+      .dl-note::before {
+        content: "Free";
+        font-size: 12px
+      }
+
+      .dl-note::after {
+        content: "No ads";
+        font-size: 12px
+      }
+
+      .install-steps {
+        gap: 12px
+      }
+
+      .install-step {
+        padding: 14px;
+        border-radius: 18px
+      }
+
+      .is-num {
+        width: 34px;
+        height: 34px;
+        font-size: 14px
+      }
+
+      .is-text h4 {
+        font-size: 15px
+      }
+
+      .is-text p {
+        display: none
+      }
+
+      .req-single {
+        padding: 20px
+      }
+
+      .req-single ul {
+        display: grid;
+        gap: 8px;
+        padding-left: 0;
+        list-style: none;
+        text-align: center
+      }
+
+      footer {
+        padding: 2.5rem 1rem
+      }
+    }
+
+    @media(max-width:380px) {
+      h1 {
+        font-size: 30px
+      }
+
+      h2 {
+        font-size: 25px
+      }
+
+      .hero-badge {
+        padding: 5px 10px;
+        letter-spacing: .4px
+      }
+
+      .btn-primary,
+      .btn-outline {
+        width: 100%;
+        justify-content: center
+      }
+
+      .hero-stat {
+        width: 78px;
+        padding: 10px 8px
+      }
+
+      .feat-card {
+        grid-template-columns: 44px 1fr;
+        padding: 14px
+      }
+
+      .feat-icon {
+        width: 42px;
+        height: 42px;
+        font-size: 20px
+      }
+
+      .step,
+      .install-step {
+        gap: 4px 10px
+      }
+
+      .dl-card {
+        padding: 24px 14px
+      }
     }
   </style>
 </head>
+
 <body>
 
-<!-- NAV -->
-<nav>
-  <a class="nav-logo" href="#">
-    <img src="data:image/png;base64,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" alt="DoseBuddy Logo">
-    DoseBuddy
-  </a>
-  <ul class="nav-links">
-    <li><a href="#about">About</a></li>
-    <li><a href="#features">Features</a></li>
-    <li><a href="#how">How it works</a></li>
-    <li><a href="#download">Download</a></li>
-  </ul>
-  <a class="btn-nav" href="#download">⬇ Download Free</a>
-</nav>
-
-<!-- HERO -->
-<section class="hero">
-  <div>
-    <div class="hero-badge">📱 Android App · Free to use</div>
-    <h1>Your voice-powered <span>medicine buddy.</span></h1>
-    <p class="hero-desc">
-      DoseBuddy lets you set medicine reminders just by speaking, view your alarm history, and even ask questions about any medication — all in one simple Android app.
-    </p>
-    <div class="hero-btns">
-      <a class="btn-primary" href="#download">⬇ &nbsp;Download APK</a>
-      <a class="btn-outline" href="#features">See Features</a>
-    </div>
-  </div>
-  <div class="hero-visual">
-    <div class="hero-logo-wrap">
-      <img class="hero-logo-img" src="data:image/png;base64,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" alt="DoseBuddy App Icon">
-      <div class="hero-stat-row">
-        <div class="hero-stat">
-          <div class="hero-stat-num">100%</div>
-          <div class="hero-stat-label">Free</div>
-        </div>
-        <div class="hero-stat">
-          <div class="hero-stat-num">🎙</div>
-          <div class="hero-stat-label">Voice Entry</div>
-        </div>
-        <div class="hero-stat">
-          <div class="hero-stat-num">💊</div>
-          <div class="hero-stat-label">Med Info</div>
-        </div>
-      </div>
-    </div>
-    <div class="float-tag ft1">🔔 Alarm set by voice!</div>
-    <div class="float-tag ft2">💬 "What is Metformin?"</div>
-  </div>
-</section>
-
-<!-- ABOUT -->
-<section class="about" id="about">
-  <div class="about-inner">
-    <p class="section-label">About DoseBuddy</p>
-    <h2>What is DoseBuddy?</h2>
-    <p class="about-lead">
-      DoseBuddy is a free Android app that makes managing your medicines effortless. Whether you're a patient, caregiver, or just want to stay on top of your health, DoseBuddy combines voice-powered reminders, alarm management, and a built-in medicine information assistant — all in one place.
-    </p>
-  </div>
-</section>
-
-<!-- FEATURES -->
-<section class="features" id="features">
-  <p class="section-label">Features</p>
-  <h2>Everything your health routine needs</h2>
-  <div class="feat-grid">
-
-    <div class="feat-card">
-      <div class="feat-icon fi-blue">🎙</div>
-      <h3>Voice-Powered Reminders</h3>
-      <p>
-        Just speak to set a reminder. Say something like <em>"Remind me to take Paracetamol at 8am"</em> and DoseBuddy will automatically create and schedule the alarm for you — no tapping, no typing.
-      </p>
-      <span class="feat-tag">🎤 Hands-free</span>
-    </div>
-
-    <div class="feat-card">
-      <div class="feat-icon fi-pink">🔔</div>
-      <h3>Alarm Management</h3>
-      <p>
-        View all your upcoming medicine alarms in one organized list. You can also browse your past alarms to track which medications you've taken and when — keeping a complete history at your fingertips.
-      </p>
-      <span class="feat-tag" style="background:var(--soft-pink);color:var(--pink)">📋 Past & upcoming</span>
-    </div>
-
-    <div class="feat-card">
-      <div class="feat-icon fi-purple">💊</div>
-      <h3>Medicine Information</h3>
-      <p>
-        Not sure what a medicine is for? Simply ask DoseBuddy. Get quick, clear information about any medication — including its uses, dosage guidance, and general precautions — right inside the app.
-      </p>
-      <span class="feat-tag" style="background:#F0EEFF;color:#9B7BE0">🔍 Ask anytime</span>
-    </div>
-
-  </div>
-</section>
-
-<!-- HOW IT WORKS -->
-<section class="how" id="how">
-  <div class="how-inner">
-    <p class="section-label">Getting Started</p>
-    <h2>How it works</h2>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <h3>Download & Install</h3>
-        <p>Download the APK below and install it on your Android device in under a minute.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <h3>Speak Your Reminder</h3>
-        <p>Open DoseBuddy, tap the mic, and say your medicine name and time. The alarm is set instantly.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <h3>Manage Your Alarms</h3>
-        <p>View upcoming and past alarms anytime. Stay on top of your full medication schedule.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">4</div>
-        <h3>Ask About Medicines</h3>
-        <p>Have a question about a drug? Ask DoseBuddy and get clear, helpful information right away.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- DOWNLOAD -->
-<section class="download" id="download">
-  <div class="download-inner">
-    <p class="section-label">Download</p>
-    <h2>Get DoseBuddy for Android</h2>
-    <p style="text-align:center;font-size:15px;color:var(--muted);margin-top:-0.5rem;">Free to download. No account required.</p>
-    <div class="dl-center">
-      <div class="dl-card">
-        <div class="dl-badge">Free Download</div>
-        <div class="dl-icon">📱</div>
-        <div class="dl-title">Android</div>
-        <div class="dl-sub">Requires Android 10 or higher</div>
-        <div class="dl-size">Version 1.0.0 &nbsp;·&nbsp; ~22 MB &nbsp;·&nbsp; APK file</div>
-        <!-- TODO: Replace href="#" with your actual .apk file URL
-             e.g. href="https://yoursite.com/downloads/DoseBuddy.apk" -->
-        <a href="#" class="btn-dl btn-dl-grad" onclick="dlAlert();return false;">
-          ⬇ &nbsp;Download APK
-        </a>
-      </div>
-    </div>
-    <p class="dl-note">✅ Free &nbsp;·&nbsp; No ads &nbsp;·&nbsp; No account needed &nbsp;·&nbsp; Works offline</p>
-  </div>
-</section>
-
-<!-- INSTALL GUIDE -->
-<section class="install">
-  <div class="install-inner">
-    <p class="section-label">Installation Guide</p>
-    <h2>How to install the APK</h2>
-    <div class="install-steps">
-      <div class="install-step">
-        <div class="is-num">1</div>
-        <div class="is-text">
-          <h4>Download the APK file</h4>
-          <p>Tap <strong>Download APK</strong> above. The file will be saved to your phone's <code>Downloads</code> folder.</p>
-        </div>
-      </div>
-      <div class="install-step">
-        <div class="is-num">2</div>
-        <div class="is-text">
-          <h4>Allow installation from unknown sources</h4>
-          <p>Go to <code>Settings → Security</code> (or <code>Privacy</code>) and enable <strong>Install unknown apps</strong> for your browser or file manager.</p>
-        </div>
-      </div>
-      <div class="install-step">
-        <div class="is-num">3</div>
-        <div class="is-text">
-          <h4>Open the APK file</h4>
-          <p>Open your <code>Downloads</code> folder, tap <strong>DoseBuddy.apk</strong>, and follow the on-screen prompts to install.</p>
-        </div>
-      </div>
-      <div class="install-step">
-        <div class="is-num">4</div>
-        <div class="is-text">
-          <h4>Launch DoseBuddy</h4>
-          <p>Once installed, open the app from your home screen and start managing your medicines with your voice!</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- SYSTEM REQUIREMENTS -->
-<section class="sysreq">
-  <p class="section-label">Requirements</p>
-  <h2>System Requirements</h2>
-  <div class="req-single">
-    <h3>📱 Android</h3>
-    <ul>
-      <li>Android 10 or higher</li>
-      <li>1 GB RAM minimum</li>
-      <li>25 MB free storage</li>
-      <li>Internet connection for voice & medicine info</li>
-      <li>Microphone (required for voice entry)</li>
+  <!-- NAV -->
+  <nav>
+    <a class="nav-logo" href="#">
+      <img
+        src="./icon.png"
+        alt="Zam Logo">
+      Zam
+    </a>
+    <ul class="nav-links">
+      <li><a href="#about">About</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#download">Download</a></li>
     </ul>
-  </div>
-</section>
+    <a class="btn-nav" href="#download">⬇ Download Free</a>
+  </nav>
 
-<!-- FOOTER -->
-<footer>
-  <div class="footer-logo">
-    <img src="data:image/png;base64,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" alt="DoseBuddy Logo">
-    DoseBuddy
-  </div>
-  <p>Your voice-powered medicine companion.</p>
-  <div class="footer-links">
-    <a href="#">Privacy Policy</a>
-    <a href="#">Terms of Use</a>
-    <a href="#">Contact</a>
-  </div>
-  <p style="margin-top:10px;font-size:12px;opacity:.4;">© 2026 DoseBuddy. All rights reserved.</p>
-</footer>
+  <!-- HERO -->
+  <section class="hero">
+    <div>
+      <div class="hero-badge">📱 Android App · Free to use</div>
+      <h1>Your voice-powered <span>medicine buddy.</span></h1>
+      <p class="hero-desc">
+        <span class="desktop-copy">Zam lets you set medicine reminders just by speaking, view your alarm history, and even ask questions
+          about any medication — all in one simple Android app.</span>
+        <span class="mobile-copy">Voice medicine reminders, logs, and medicine info in one Android app.</span>
+      </p>
+      <div class="hero-btns">
+        <a class="btn-primary" href="#download">⬇ &nbsp;Download APK</a>
+        <a class="btn-outline" href="#features">See Features</a>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-logo-wrap">
+        <img class="hero-logo-img"
+          src="./icon.png"
+          alt="Zam App Icon">
+        <div class="hero-stat-row">
+          <div class="hero-stat">
+            <div class="hero-stat-num">100%</div>
+            <div class="hero-stat-label">Free</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-num">🎙</div>
+            <div class="hero-stat-label">Voice Entry</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-num">💊</div>
+            <div class="hero-stat-label">Med Info</div>
+          </div>
+        </div>
+      </div>
+      <div class="float-tag ft1">🔔 Alarm set by voice!</div>
+      <div class="float-tag ft2">💬 "What is Metformin?"</div>
+    </div>
+  </section>
 
-<script>
-  function dlAlert() {
-    // Remove this function and the onclick attribute once you add your real APK URL to href.
-    alert('To activate this button, open the HTML file and replace href="#" on the Download APK button with your actual .apk file URL.\n\nExample:\nhref="https://yoursite.com/DoseBuddy.apk"');
-  }
-</script>
+  <!-- ABOUT -->
+  <section class="about" id="about">
+    <div class="about-inner">
+      <p class="section-label">About Zam</p>
+      <h2>What is Zam?</h2>
+      <p class="about-lead">
+        <span class="desktop-copy">Zam is a free Android app that makes managing your medicines effortless. Whether you're a patient,
+          caregiver, or just want to stay on top of your health, Zam combines voice-powered reminders, alarm
+          management, and a built-in medicine information assistant — all in one place.</span>
+        <span class="mobile-copy">A free Android app for medicine reminders and intake tracking.</span>
+      </p>
+      <p class="about-lead">
+        <strong>Zealous Assistant for Medication</strong>
+      </p>
+      <p class="about-lead">
+        <span class="desktop-copy">"The name ZAM stands for Zealous Assistant for Medication. We chose this because the system operates
+          with zeal—showing great energy and commitment to ensuring patients never miss a critical dose."</span>
+        <span class="mobile-copy">Built to help patients avoid missed doses.</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features" id="features">
+    <p class="section-label">Features</p>
+    <h2>Everything your health routine needs</h2>
+    <div class="feat-grid">
+
+      <div class="feat-card">
+        <div class="feat-icon fi-blue">🎙</div>
+        <h3>Voice-Powered Reminders</h3>
+        <p>
+          Just speak to set a reminder. Say something like <em>"Remind me to take Paracetamol at 8am"</em> and Zam
+          will automatically create and schedule the alarm for you — no tapping, no typing.
+        </p>
+        <span class="feat-tag">🎤 Hands-free</span>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon fi-pink">🔔</div>
+        <h3>Alarm Management</h3>
+        <p>
+          View all your upcoming medicine alarms in one organized list. You can also browse your past alarms to track
+          which medications you've taken and when — keeping a complete history at your fingertips.
+        </p>
+        <span class="feat-tag" style="background:var(--soft-pink);color:var(--pink)">📋 Past & upcoming</span>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon fi-purple">💊</div>
+        <h3>Medicine Information</h3>
+        <p>
+          Not sure what a medicine is for? Simply ask Zam. Get quick, clear information about any medication —
+          including its uses, dosage guidance, and general precautions — right inside the app.
+        </p>
+        <span class="feat-tag" style="background:#F0EEFF;color:#9B7BE0">🔍 Ask anytime</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how" id="how">
+    <div class="how-inner">
+      <p class="section-label">Getting Started</p>
+      <h2>How it works</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h3>Download & Install</h3>
+          <p>Download the APK below and install it on your Android device in under a minute.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3>Speak Your Reminder</h3>
+          <p>Open Zam, tap the mic, and say your medicine name and time. The alarm is set instantly.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h3>Manage Your Alarms</h3>
+          <p>View upcoming and past alarms anytime. Stay on top of your full medication schedule.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <h3>Ask About Medicines</h3>
+          <p>Have a question about a drug? Ask Zam and get clear, helpful information right away.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DOWNLOAD -->
+  <section class="download" id="download">
+    <div class="download-inner">
+      <p class="section-label">Download</p>
+      <h2>Get Zam for Android</h2>
+      <p style="text-align:center;font-size:15px;color:var(--muted);margin-top:-0.5rem;">Free to download. No account
+        required.</p>
+      <div class="dl-center">
+        <div class="dl-card">
+          <div class="dl-badge">Free Download</div>
+          <div class="dl-icon">📱</div>
+          <div class="dl-title">Android</div>
+          <div class="dl-sub">Requires Android 12 or higher</div>
+          <div class="dl-size">Version 1.0.0 &nbsp;·&nbsp; ~22 MB &nbsp;·&nbsp; APK file</div>
+          <a href="downloads/zam-latest.apk" class="btn-dl btn-dl-grad" download>
+            ⬇ &nbsp;Download APK
+          </a>
+        </div>
+      </div>
+      <p class="dl-note">✅ Free &nbsp;·&nbsp; No ads &nbsp;·&nbsp; No account needed &nbsp;·&nbsp; Works offline</p>
+    </div>
+  </section>
+
+  <!-- INSTALL GUIDE -->
+  <section class="install">
+    <div class="install-inner">
+      <p class="section-label">Installation Guide</p>
+      <h2>How to install the APK</h2>
+      <div class="install-steps">
+        <div class="install-step">
+          <div class="is-num">1</div>
+          <div class="is-text">
+            <h4>Download the APK file</h4>
+            <p>Tap <strong>Download APK</strong> above. The file will be saved to your phone's <code>Downloads</code>
+              folder.</p>
+          </div>
+        </div>
+        <div class="install-step">
+          <div class="is-num">2</div>
+          <div class="is-text">
+            <h4>Allow installation from unknown sources</h4>
+            <p>Go to <code>Settings → Security</code> (or <code>Privacy</code>) and enable <strong>Install unknown
+                apps</strong> for your browser or file manager.</p>
+          </div>
+        </div>
+        <div class="install-step">
+          <div class="is-num">3</div>
+          <div class="is-text">
+            <h4>Open the APK file</h4>
+            <p>Open your <code>Downloads</code> folder, tap <strong>Zam.apk</strong>, and follow the on-screen
+              prompts to install.</p>
+          </div>
+        </div>
+        <div class="install-step">
+          <div class="is-num">4</div>
+          <div class="is-text">
+            <h4>Launch Zam</h4>
+            <p>Once installed, open the app from your home screen and start managing your medicines with your voice!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SYSTEM REQUIREMENTS -->
+  <section class="sysreq">
+    <p class="section-label">Requirements</p>
+    <h2>System Requirements</h2>
+    <div class="req-single">
+      <h3>📱 Android</h3>
+      <ul>
+        <li>Android 12 or higher</li>
+        <li>4 GB RAM minimum</li>
+        <li>180 MB free storage</li>
+        <li>Internet connection for voice & medicine info</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">
+      <img
+        src="./icon.png"
+        alt="Zam Logo">
+      Zam
+    </div>
+    <p>Your voice-powered medicine companion.</p>
+    <div class="footer-links">
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Use</a>
+      <a href="#">Contact</a>
+    </div>
+    <p style="margin-top:10px;font-size:12px;opacity:.4;">© 2026 Zam. All rights reserved.</p>
+  </footer>
 
 </body>
+
 </html>
