@@ -156,6 +156,41 @@ class BackendService {
       debugPrint('Backend append log failed: $e');
     }
   }
+
+  static Future<List<ReminderLog>> loadLogs() async {
+    if (!isConfigured) return [];
+    try {
+      final res = await http
+          .get(
+            Uri.parse('$_baseUrl/api/reminder-logs'),
+            headers: await _headers(),
+          )
+          .timeout(const Duration(seconds: 10));
+      if (res.statusCode != 200) return [];
+      final body = jsonDecode(res.body) as Map<String, dynamic>;
+      final items = body['logs'] as List? ?? [];
+      return items
+          .map((item) => ReminderLog.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      debugPrint('Backend load logs failed: $e');
+      return [];
+    }
+  }
+
+  static Future<void> deleteAllLogs() async {
+    if (!isConfigured) return;
+    try {
+      await http
+          .delete(
+            Uri.parse('$_baseUrl/api/reminder-logs'),
+            headers: await _headers(),
+          )
+          .timeout(const Duration(seconds: 10));
+    } catch (e) {
+      debugPrint('Backend delete logs failed: $e');
+    }
+  }
 }
 
 class BackendSyncResult {

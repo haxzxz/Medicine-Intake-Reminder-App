@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 import '../models/reminder_log.dart';
+import '../services/backend_service.dart';
 import '../services/storage_service.dart';
 
 class ReminderLogScreen extends StatefulWidget {
@@ -37,7 +39,12 @@ class _ReminderLogScreenState extends State<ReminderLogScreen> {
   }
 
   Future<void> _loadLogs() async {
-    final logs = await StorageService.loadLogs();
+    var logs = await StorageService.loadLogs();
+    final remoteLogs = await BackendService.loadLogs();
+    if (remoteLogs.isNotEmpty) {
+      await StorageService.saveLogs(remoteLogs);
+      logs = remoteLogs;
+    }
     setState(() {
       // Show newest first
       _logs = logs.reversed.toList();
@@ -72,6 +79,7 @@ class _ReminderLogScreenState extends State<ReminderLogScreen> {
     );
     if (confirm == true) {
       await StorageService.clearLogs();
+      unawaited(BackendService.deleteAllLogs());
       setState(() => _logs = []);
     }
   }

@@ -39,13 +39,17 @@ class _HomeScreenState extends State<HomeScreen>
 
   Timer? _countdownTimer;
   Timer? _voiceAutoSendTimer;
+  Timer? _voiceRestartTimer;
   bool _isListening = false;
   bool _speechAvailable = false;
   bool _isLoading = false;
   bool _disposed = false;
   bool _isHoldingMic = false;
+  bool _isStoppingVoice = false;
   String _voiceFinalText = '';
   String _voicePartialText = '';
+  String? _speechLocaleId;
+  int _voiceSessionId = 0;
   DateTime? _lastSendTime;
   int _nextId = 1;
   int _selectedIndex = 0;
@@ -78,13 +82,14 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _init() async {
-    await Future.wait([_initSpeech(), _loadData()]);
+    unawaited(_initSpeech());
     _startCountdown();
     final name = AuthService.displayName.split(' ').first;
     _addBotMessage(
       "Hey $name! 👋 I'm Zam, your AI medicine reminder assistant.\n\nTry: \"yo zam pills 8ish\" or ask me anything about your meds!",
       suggestions: _defaultChips,
     );
+    unawaited(_loadData());
   }
 
   Future<void> _initSpeech() async {
@@ -92,13 +97,13 @@ class _HomeScreenState extends State<HomeScreen>
       _speechAvailable = await _speech.initialize(
         onError: (e) {
           debugPrint('Speech error: ${e.errorMsg}');
-          if (_isHoldingMic && !_disposed) {
+          if (_isHoldingMic && !_isStoppingVoice && !_disposed) {
             _restartListeningSoon();
           }
         },
         onStatus: (s) {
           if (s == 'done' || s == 'notListening') {
-            if (_isHoldingMic) {
+            if (_isHoldingMic && !_isStoppingVoice) {
               _restartListeningSoon();
             } else {
               _setListening(false);
@@ -106,23 +111,48 @@ class _HomeScreenState extends State<HomeScreen>
           }
         },
       );
+      if (_speechAvailable) {
+        final systemLocale = await _speech.systemLocale();
+        _speechLocaleId = systemLocale?.localeId;
+      }
     } catch (e) {
       debugPrint('Speech init: $e');
     }
   }
 
   Future<void> _loadData() async {
-    // API key comes entirely from .env — no UI input needed
+    unawaited(_loadLogsFromBackend());
+
     final saved = await StorageService.loadReminders();
+    await _applyLoadedReminders(saved, syncAfter: false);
+
     final remote = await BackendService.loadReminders();
+    if (remote.isEmpty) {
+      unawaited(_syncRemindersToBackend());
+      return;
+    }
+
     final byId = {for (final reminder in saved) reminder.id: reminder};
     for (final reminder in remote) {
       byId[reminder.id] = reminder;
     }
-    final merged = byId.values.toList();
+    await _applyLoadedReminders(byId.values.toList());
+  }
+
+  Future<void> _loadLogsFromBackend() async {
+    final remoteLogs = await BackendService.loadLogs();
+    if (remoteLogs.isEmpty) return;
+    await StorageService.saveLogs(remoteLogs);
+    _safeSetState(() => _logRefreshTick++);
+  }
+
+  Future<void> _applyLoadedReminders(
+    List<Reminder> loaded, {
+    bool syncAfter = true,
+  }) async {
     final active = <Reminder>[];
 
-    for (final r in merged) {
+    for (final r in loaded) {
       if (r.isPast && !r.fired) {
         await _logReminder(r, 'missed');
         if (r.isRecurring) {
@@ -142,6 +172,7 @@ class _HomeScreenState extends State<HomeScreen>
     }
 
     _safeSetState(() {
+      _reminders.clear();
       _reminders.addAll(active);
       if (_reminders.isNotEmpty) {
         _nextId =
@@ -149,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen>
       }
     });
     await StorageService.saveReminders(_reminders);
-    unawaited(_syncRemindersToBackend());
+    if (syncAfter) unawaited(_syncRemindersToBackend());
   }
 
   void _startCountdown() {
@@ -306,9 +337,10 @@ class _HomeScreenState extends State<HomeScreen>
     String sourceText = '',
   ]) async {
     final time = _parseReminderTime(intent, sourceText);
+    final medicineName = _cleanMedicineName(intent.name, sourceText);
     final reminder = Reminder(
       id: _nextId++,
-      medicineName: intent.name,
+      medicineName: medicineName,
       time: time,
       recurrence: _normaliseRecurrence(intent.recurrence),
     );
@@ -344,10 +376,34 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   String _medicineNameFromRelativeText(String text) {
-    var cleaned = text
+    return _cleanMedicineName(text, text);
+  }
+
+  String _cleanMedicineName(String rawName, [String sourceText = '']) {
+    var cleaned = rawName.trim();
+    final source = sourceText.trim();
+    if (source.isNotEmpty) {
+      final withoutTiming = source.replaceAll(
+        RegExp(
+          r'\b(?:for|in|after)?\s*\d{1,3}\s*(?:m|min|mins|minute|minutes|s|sec|secs|second|seconds)\b',
+          caseSensitive: false,
+        ),
+        ' ',
+      );
+      final medMatches = RegExp(
+        r"\b(?:for|take|taking|to take)\s+(?:my\s+)?([a-z][a-z0-9 \-'’]*)\s+(?:medicine|meds|pill|pills|dose)\b",
+        caseSensitive: false,
+      ).allMatches(withoutTiming).toList();
+      final medMatch = medMatches.isEmpty ? null : medMatches.last;
+      if (medMatch != null) {
+        cleaned = medMatch.group(1)?.trim() ?? cleaned;
+      }
+    }
+
+    cleaned = cleaned
         .replaceAll(
           RegExp(
-            r'\b(remind me|reminder|remind|to take|take|medicine|meds|pill|pills|dose|in|after|for)\b',
+            r'\b(um|uh|hmm|hm|please|pls|hey|yo|zam|set|create|add|make|a|an|the|my|now|remind me|reminder|remind|to take|take|taking|medicine|meds|pill|pills|dose|in|after|for)\b',
             caseSensitive: false,
           ),
           ' ',
@@ -591,30 +647,46 @@ class _HomeScreenState extends State<HomeScreen>
       return;
     }
     if (_isListening) return;
+    _voiceSessionId++;
+    _isStoppingVoice = false;
     _isHoldingMic = true;
     _voiceFinalText = '';
     _voicePartialText = '';
+    _voiceRestartTimer?.cancel();
     _setListening(true);
-    await _listenForSpeechSegment();
+    await _listenForSpeechSegment(_voiceSessionId);
   }
 
-  Future<void> _listenForSpeechSegment() async {
-    if (!_speechAvailable || !_isHoldingMic || _disposed) return;
+  Future<void> _listenForSpeechSegment(int sessionId) async {
+    if (!_speechAvailable ||
+        !_isHoldingMic ||
+        _disposed ||
+        sessionId != _voiceSessionId) {
+      return;
+    }
     if (_speech.isListening) return;
-    await _speech.listen(
-      onResult: (result) {
-        if (result.recognizedWords.isNotEmpty) {
-          _captureSpeechResult(result.recognizedWords, result.finalResult);
-        }
-      },
-      listenOptions: SpeechListenOptions(
-        localeId: 'en_US',
-        listenFor: _voiceListenWindow,
-        pauseFor: _voicePauseWindow,
-        partialResults: true,
-        cancelOnError: true,
-      ),
-    );
+    try {
+      await _speech.listen(
+        onResult: (result) {
+          if (result.recognizedWords.isNotEmpty &&
+              sessionId == _voiceSessionId) {
+            _captureSpeechResult(result.recognizedWords, result.finalResult);
+          }
+        },
+        listenOptions: SpeechListenOptions(
+          localeId: _speechLocaleId ?? 'en_US',
+          listenFor: _voiceListenWindow,
+          pauseFor: _voicePauseWindow,
+          partialResults: true,
+          cancelOnError: false,
+        ),
+      );
+    } catch (e) {
+      debugPrint('Speech listen failed: $e');
+      if (_isHoldingMic && !_isStoppingVoice && !_disposed) {
+        _restartListeningSoon();
+      }
+    }
   }
 
   Future<void> _toggleVoiceInput() async {
@@ -625,23 +697,38 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  Future<void> _restartListeningSoon() async {
-    await Future.delayed(_voiceRestartDelay);
-    if (_isHoldingMic && !_disposed && !_speech.isListening) {
-      await _listenForSpeechSegment();
-    }
+  void _restartListeningSoon() {
+    _voiceRestartTimer?.cancel();
+    final sessionId = _voiceSessionId;
+    _voiceRestartTimer = Timer(_voiceRestartDelay, () {
+      if (_isHoldingMic &&
+          !_isStoppingVoice &&
+          !_disposed &&
+          !_speech.isListening &&
+          sessionId == _voiceSessionId) {
+        unawaited(_listenForSpeechSegment(sessionId));
+      }
+    });
   }
 
   Future<void> _stopListening({required bool send}) async {
     if (!_isListening && !_isHoldingMic) return;
     HapticFeedback.lightImpact();
     _voiceAutoSendTimer?.cancel();
+    _voiceRestartTimer?.cancel();
+    _voiceSessionId++;
+    _isStoppingVoice = true;
     _isHoldingMic = false;
-    await _speech.stop();
+    try {
+      await _speech.stop();
+    } catch (e) {
+      debugPrint('Speech stop failed: $e');
+    }
     _setListening(false);
     final text = _mergedVoiceText().trim();
     _voiceFinalText = '';
     _voicePartialText = '';
+    _isStoppingVoice = false;
     if (send && text.isNotEmpty) {
       await _send(text);
     }
@@ -651,14 +738,18 @@ class _HomeScreenState extends State<HomeScreen>
     final cleaned = words.trim();
     if (cleaned.isEmpty) return;
     if (isFinal) {
-      if (!_voiceFinalText.toLowerCase().endsWith(cleaned.toLowerCase())) {
-        _voiceFinalText = _joinVoiceText(_voiceFinalText, cleaned);
-      }
+      _voiceFinalText = _mergeVoiceChunk(_voiceFinalText, cleaned);
       _voicePartialText = '';
     } else {
       _voicePartialText = cleaned;
     }
-    _safeSetState(() => _inputCtrl.text = _mergedVoiceText());
+    _safeSetState(() {
+      final merged = _mergedVoiceText();
+      _inputCtrl.value = TextEditingValue(
+        text: merged,
+        selection: TextSelection.collapsed(offset: merged.length),
+      );
+    });
     _scheduleVoiceAutoSend();
   }
 
@@ -678,14 +769,30 @@ class _HomeScreenState extends State<HomeScreen>
     final finalLower = _voiceFinalText.toLowerCase();
     final partialLower = _voicePartialText.toLowerCase();
     if (finalLower.endsWith(partialLower)) return _voiceFinalText.trim();
-    return _joinVoiceText(_voiceFinalText, _voicePartialText).trim();
+    return _mergeVoiceChunk(_voiceFinalText, _voicePartialText).trim();
   }
 
-  String _joinVoiceText(String first, String second) {
+  String _mergeVoiceChunk(String first, String second) {
     final a = first.trim();
     final b = second.trim();
     if (a.isEmpty) return b;
     if (b.isEmpty) return a;
+    final aLower = a.toLowerCase();
+    final bLower = b.toLowerCase();
+    if (aLower == bLower || aLower.endsWith(bLower)) return a;
+    if (bLower.startsWith(aLower)) return b;
+
+    final aWords = a.split(RegExp(r'\s+'));
+    final bWords = b.split(RegExp(r'\s+'));
+    final maxOverlap =
+        aWords.length < bWords.length ? aWords.length : bWords.length;
+    for (var i = maxOverlap; i > 0; i--) {
+      final tail = aWords.sublist(aWords.length - i).join(' ').toLowerCase();
+      final head = bWords.sublist(0, i).join(' ').toLowerCase();
+      if (tail == head) {
+        return '${aWords.join(' ')} ${bWords.sublist(i).join(' ')}'.trim();
+      }
+    }
     return '$a $b';
   }
 
@@ -729,11 +836,12 @@ class _HomeScreenState extends State<HomeScreen>
     _disposed = true;
     _countdownTimer?.cancel();
     _voiceAutoSendTimer?.cancel();
+    _voiceRestartTimer?.cancel();
     _inputCtrl.dispose();
     _scrollCtrl.dispose();
     _micPulseCtrl.dispose();
     _isHoldingMic = false;
-    if (_isListening) _speech.stop();
+    if (_isListening || _speech.isListening) _speech.stop();
     super.dispose();
   }
 

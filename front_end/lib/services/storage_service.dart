@@ -65,7 +65,12 @@ class StorageService {
   static Future<void> appendLog(ReminderLog log) async {
     final logs = await loadLogs();
     logs.add(log);
+    await saveLogs(logs);
+  }
+
+  static Future<void> saveLogs(List<ReminderLog> logs) async {
     // Keep max 200 entries — oldest first, trim from front
+    logs.sort((a, b) => a.firedAt.compareTo(b.firedAt));
     final trimmed = logs.length > 200 ? logs.sublist(logs.length - 200) : logs;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(

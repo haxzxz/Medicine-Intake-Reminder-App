@@ -54,3 +54,12 @@ flutter:
   assets:
     - .env
     - assets/images/
+  fonts:
+    - family: Montserrat
+      fonts:
+        - asset: assets/font/Montserrat-Bold.ttf
+        - asset: assets/font/Montserrat-SemiBold.ttf
+        - asset: assets/font/Montserrat-Regular.ttf
+        - asset: assets/font/Montserrat-Medium.ttf
+        - asset: assets/font/Montserrat-Italic.ttf
+        - asset: assets/font/Montserrat-Thin.ttf

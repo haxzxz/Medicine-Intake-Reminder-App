@@ -73,6 +73,7 @@ class ZamApp extends StatelessWidget {
       title: 'Zam',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+        fontFamily: 'Montserrat-Regular',
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF534AB7),
           brightness: Brightness.light,
@@ -80,6 +81,7 @@ class ZamApp extends StatelessWidget {
         useMaterial3: true,
       ),
       darkTheme: ThemeData(
+        fontFamily: 'Montserrat-Regular',
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF534AB7),
           brightness: Brightness.dark,
@@ -95,36 +97,12 @@ class ZamApp extends StatelessWidget {
             return const _SplashScreen();
           }
           if (snapshot.hasData) {
-            return const _SignedInLaunchDelay();
+            return const HomeScreen();
           }
           return const LoginScreen();
         },
       ),
     );
-  }
-}
-
-class _SignedInLaunchDelay extends StatefulWidget {
-  const _SignedInLaunchDelay();
-
-  @override
-  State<_SignedInLaunchDelay> createState() => _SignedInLaunchDelayState();
-}
-
-class _SignedInLaunchDelayState extends State<_SignedInLaunchDelay> {
-  bool _ready = false;
-
-  @override
-  void initState() {
-    super.initState();
-    Future.delayed(const Duration(milliseconds: 900), () {
-      if (mounted) setState(() => _ready = true);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _ready ? const HomeScreen() : const _SplashScreen();
   }
 }
 
@@ -139,9 +117,7 @@ class _SplashScreen extends StatelessWidget {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Text('Z',
               style: TextStyle(
-                  fontSize: 56,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF534AB7))),
+                  fontFamily: 'Montserrat-Bold', color: Color(0xFF534AB7))),
           SizedBox(height: 16),
           CircularProgressIndicator(
             color: Color(0xFF534AB7),
