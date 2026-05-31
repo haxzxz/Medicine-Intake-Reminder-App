@@ -205,6 +205,12 @@ def create_app():
         db.session.commit()
         return jsonify({"log": row.to_client_json()}), 201
 
+    @app.delete("/api/reminder-logs")
+    def delete_all_logs():
+        ReminderLog.query.filter_by(user_id=g.current_user.id).delete()
+        db.session.commit()
+        return jsonify({"ok": True})
+
     return app
 
 

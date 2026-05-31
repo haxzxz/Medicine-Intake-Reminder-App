@@ -46,3 +46,4 @@ android/local.properties
 
 # Venv
 .venv-con/
+front_end/assets/font
