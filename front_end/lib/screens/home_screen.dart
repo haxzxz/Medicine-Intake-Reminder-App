@@ -236,7 +236,7 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
-  Future<void> _send([String? override]) async {
+  Future<void> _send([String? override, bool stopVoice = true]) async {
     HapticFeedback.selectionClick();
     // Debounce: prevent double-fires from voice + keyboard
     final now = DateTime.now();
@@ -245,6 +245,10 @@ class _HomeScreenState extends State<HomeScreen>
       return;
     }
     _lastSendTime = now;
+
+    if (stopVoice && (_isListening || _isHoldingMic)) {
+      await _stopListening(send: false);
+    }
 
     final text = (override ?? _inputCtrl.text).trim();
     if (text.isEmpty || _isLoading) return;
@@ -730,7 +734,7 @@ class _HomeScreenState extends State<HomeScreen>
     _voicePartialText = '';
     _isStoppingVoice = false;
     if (send && text.isNotEmpty) {
-      await _send(text);
+      await _send(text, false);
     }
   }
 
