@@ -268,6 +268,12 @@ class _HomeScreenState extends State<HomeScreen>
       return;
     }
 
+    final quickAbsoluteReminder = _quickAbsoluteReminderIntent(text);
+    if (quickAbsoluteReminder != null) {
+      await _createReminderFromIntent(quickAbsoluteReminder, text);
+      return;
+    }
+
     final quickRelativeReminder = _quickRelativeReminderIntent(text);
     if (quickRelativeReminder != null) {
       await _createReminderFromIntent(quickRelativeReminder);
@@ -329,6 +335,9 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   DateTime _parseReminderTime(ReminderIntent intent, String sourceText) {
+    final explicitTime = _clockTimeFromText(sourceText);
+    if (explicitTime != null) return explicitTime;
+
     final delay = intent.delayMinutes ?? _relativeDelayFromText(sourceText);
     if (delay != null && delay > 0) {
       return DateTime.now().add(Duration(minutes: delay));
@@ -360,6 +369,24 @@ class _HomeScreenState extends State<HomeScreen>
     return reminder;
   }
 
+  ReminderIntent? _quickAbsoluteReminderIntent(String text) {
+    final time = _clockTimeFromText(text);
+    if (time == null) return null;
+
+    final normalized = text.toLowerCase();
+    final looksLikeReminder = RegExp(
+      r'\b(remind|reminder|take|medicine|meds|pill|pills|dose|drink)\b',
+    ).hasMatch(normalized);
+    if (!looksLikeReminder) return null;
+
+    return ReminderIntent(
+      name: _medicineNameFromClockText(text),
+      time:
+          '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+      recurrence: 'none',
+    );
+  }
+
   ReminderIntent? _quickRelativeReminderIntent(String text) {
     final delay = _relativeDelayFromText(text);
     if (delay == null || delay <= 0) return null;
@@ -383,6 +410,17 @@ class _HomeScreenState extends State<HomeScreen>
     return _cleanMedicineName(text, text);
   }
 
+  String _medicineNameFromClockText(String text) {
+    final match = RegExp(
+      r'\b(?:to take|take|to drink|drink)\s+(.+)$',
+      caseSensitive: false,
+    ).firstMatch(text);
+    if (match != null) {
+      return _cleanMedicineName(match.group(1) ?? text, text);
+    }
+    return _cleanMedicineName(text, text);
+  }
+
   String _cleanMedicineName(String rawName, [String sourceText = '']) {
     var cleaned = rawName.trim();
     final source = sourceText.trim();
@@ -395,7 +433,7 @@ class _HomeScreenState extends State<HomeScreen>
         ' ',
       );
       final medMatches = RegExp(
-        r"\b(?:for|take|taking|to take)\s+(?:my\s+)?([a-z][a-z0-9 \-'’]*)\s+(?:medicine|meds|pill|pills|dose)\b",
+        r"\b(?:for|take|taking|to take|drink|to drink)\s+(?:my\s+)?([a-z][a-z0-9 \-'’]*)\s+(?:medicine|meds|pill|pills|dose)\b",
         caseSensitive: false,
       ).allMatches(withoutTiming).toList();
       final medMatch = medMatches.isEmpty ? null : medMatches.last;
@@ -407,7 +445,14 @@ class _HomeScreenState extends State<HomeScreen>
     cleaned = cleaned
         .replaceAll(
           RegExp(
-            r'\b(um|uh|hmm|hm|please|pls|hey|yo|zam|set|create|add|make|a|an|the|my|now|remind me|reminder|remind|to take|take|taking|medicine|meds|pill|pills|dose|in|after|for)\b',
+            r'\b(um|uh|hmm|hm|please|pls|hey|yo|zam|set|create|add|make|a|an|the|my|now|remind me|reminder|remind|to take|take|taking|to drink|drink|medicine|meds|pill|pills|dose|in|after|for|at|around)\b',
+            caseSensitive: false,
+          ),
+          ' ',
+        )
+        .replaceAll(
+          RegExp(
+            r'\b\d{1,2}(?::\d{2})?\s*(a\.?m\.?|p\.?m\.?)\b',
             caseSensitive: false,
           ),
           ' ',
@@ -475,6 +520,29 @@ class _HomeScreenState extends State<HomeScreen>
     ).firstMatch(text);
     if (match == null) return null;
     return int.tryParse(match.group(1)!);
+  }
+
+  DateTime? _clockTimeFromText(String text) {
+    final match = RegExp(
+      r'\b(?:at|around)?\s*(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)\b',
+      caseSensitive: false,
+    ).firstMatch(text);
+    if (match == null) return null;
+
+    var hour = int.tryParse(match.group(1)!) ?? 0;
+    final minute = int.tryParse(match.group(2) ?? '0') ?? 0;
+    if (hour < 1 || hour > 12 || minute < 0 || minute > 59) return null;
+
+    final meridiem = match.group(3)!.toLowerCase();
+    if (meridiem.startsWith('p') && hour != 12) hour += 12;
+    if (meridiem.startsWith('a') && hour == 12) hour = 0;
+
+    final now = DateTime.now();
+    var time = DateTime(now.year, now.month, now.day, hour, minute);
+    if (time.isBefore(now.add(const Duration(seconds: 10)))) {
+      time = time.add(const Duration(days: 1));
+    }
+    return time;
   }
 
   DateTime _parseTime(String hhmm) {
