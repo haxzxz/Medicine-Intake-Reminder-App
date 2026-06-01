@@ -917,22 +917,35 @@ body[data-theme="dark"] .fi-purple {
 
 /* FOOTER */
 footer {
-    background: rgba(45, 35, 64, .96);
+    background:
+        linear-gradient(180deg, rgba(45, 35, 64, .96), rgba(31, 23, 46, .98));
     color: rgba(255, 255, 255, .65);
-    padding: 2.5rem 2rem;
-    text-align: center;
+    padding: 3.25rem 2rem 2rem;
     font-size: 13px
+}
+
+.footer-inner {
+    max-width: 940px;
+    margin: 0 auto
+}
+
+.footer-brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, .1)
 }
 
 .footer-logo {
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 10px;
     font-family: 'DM Serif Display', serif;
     font-size: 21px;
     color: white;
-    margin-bottom: 8px
+    flex-shrink: 0
 }
 
 .footer-logo img {
@@ -942,18 +955,129 @@ footer {
     object-fit: cover
 }
 
+.footer-brand p {
+    max-width: 460px;
+    text-align: right;
+    line-height: 1.65
+}
+
 footer a {
-    color: rgba(255, 255, 255, .5);
+    color: rgba(255, 255, 255, .72);
     text-decoration: none;
-    margin: 0 8px
+    transition: color .25s var(--ease-premium), border-color .25s var(--ease-premium), transform .25s var(--ease-premium), background .25s var(--ease-premium)
 }
 
 footer a:hover {
     color: white
 }
 
-.footer-links {
-    margin: 10px 0
+.footer-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin: 24px 0
+}
+
+.footer-action {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 88px;
+    padding: 16px 18px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, .07);
+    border: 1px solid rgba(255, 255, 255, .11)
+}
+
+.footer-action:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, .1);
+    border-color: rgba(244, 139, 176, .34)
+}
+
+.footer-action-primary {
+    background: linear-gradient(135deg, rgba(123, 143, 224, .28), rgba(244, 139, 176, .2));
+    border-color: rgba(244, 139, 176, .25)
+}
+
+.footer-action-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    color: white;
+    background: rgba(255, 255, 255, .12);
+    font-size: 18px
+}
+
+.footer-action strong,
+.footer-action small {
+    display: block
+}
+
+.footer-action strong {
+    color: white;
+    font-size: 15px;
+    margin-bottom: 2px
+}
+
+.footer-action small {
+    color: rgba(255, 255, 255, .58);
+    line-height: 1.45
+}
+
+.footer-contact {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 18px 0;
+    border-top: 1px solid rgba(255, 255, 255, .1);
+    border-bottom: 1px solid rgba(255, 255, 255, .1)
+}
+
+.footer-heading {
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap
+}
+
+.footer-devs {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px
+}
+
+.footer-devs a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .06);
+    border: 1px solid rgba(255, 255, 255, .1);
+    font-size: 12px
+}
+
+.footer-devs a:hover {
+    background: rgba(255, 255, 255, .1);
+    border-color: rgba(123, 143, 224, .36)
+}
+
+.footer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-top: 18px;
+    color: rgba(255, 255, 255, .4);
+    font-size: 12px
 }
 
 /* ─── DARK MODE OVERRIDES ─── */
@@ -991,7 +1115,8 @@ body[data-theme="dark"] .btn-dl-subtle {
 }
 
 body[data-theme="dark"] footer {
-    background: rgba(12, 9, 18, .96)
+    background:
+        linear-gradient(180deg, rgba(18, 13, 28, .98), rgba(12, 9, 18, .98))
 }
 
 /* FIX: How It Works steps — white background in dark mode */
@@ -1338,7 +1463,43 @@ body[data-theme="dark"] .is-text code {
     }
 
     footer {
-        padding: 2.5rem 1rem
+        padding: 2.5rem 1rem 1.6rem
+    }
+
+    .footer-brand,
+    .footer-contact,
+    .footer-bottom {
+        flex-direction: column;
+        align-items: flex-start
+    }
+
+    .footer-brand {
+        gap: 12px
+    }
+
+    .footer-brand p {
+        text-align: left;
+        max-width: 100%
+    }
+
+    .footer-actions {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin: 18px 0
+    }
+
+    .footer-action {
+        min-height: 78px;
+        padding: 14px
+    }
+
+    .footer-devs {
+        justify-content: flex-start
+    }
+
+    .footer-devs a {
+        width: 100%;
+        justify-content: center
     }
 }
 
