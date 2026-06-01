@@ -676,6 +676,10 @@ body[data-theme="dark"] .fi-purple {
     box-shadow: 0 34px 90px rgba(123, 143, 224, .22)
 }
 
+.dl-card.is-unsupported {
+    box-shadow: 0 24px 80px rgba(244, 139, 176, .16)
+}
+
 .dl-badge {
     display: inline-block;
     background: var(--soft-blue);
@@ -685,6 +689,11 @@ body[data-theme="dark"] .fi-purple {
     padding: 4px 14px;
     border-radius: 12px;
     margin-bottom: 16px
+}
+
+.dl-badge.is-warning {
+    background: var(--soft-pink);
+    color: var(--mid)
 }
 
 .dl-icon {
@@ -711,6 +720,29 @@ body[data-theme="dark"] .fi-purple {
     margin-bottom: 28px
 }
 
+.dl-alert {
+    text-align: center;
+    background: rgba(253, 232, 241, .68);
+    border: 1px solid rgba(244, 139, 176, .22);
+    border-radius: 18px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+    margin: 0 0 18px;
+    padding: 13px 15px
+}
+
+.dl-alert strong,
+.dl-alert span {
+    display: block
+}
+
+.dl-alert strong {
+    color: var(--text);
+    font-size: 14px;
+    margin-bottom: 3px
+}
+
 .btn-dl {
     width: 100%;
     padding: 15px;
@@ -732,6 +764,13 @@ body[data-theme="dark"] .fi-purple {
     background: var(--grad);
     color: white;
     box-shadow: 0 6px 22px rgba(196, 136, 196, .32)
+}
+
+.btn-dl-subtle {
+    background: rgba(255, 255, 255, .5);
+    border: 1px solid rgba(196, 136, 196, .22);
+    color: var(--mid);
+    box-shadow: 0 8px 24px rgba(92, 67, 128, .08)
 }
 
 .btn-dl:hover {
@@ -937,6 +976,18 @@ body[data-theme="dark"] .theme-toggle:hover {
     background: rgba(255, 255, 255, .1);
     border-color: rgba(255, 255, 255, .16);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 14px 28px rgba(0, 0, 0, .22)
+}
+
+body[data-theme="dark"] .dl-alert {
+    background: rgba(244, 139, 176, .11);
+    border-color: rgba(244, 139, 176, .22)
+}
+
+body[data-theme="dark"] .btn-dl-subtle {
+    background: rgba(255, 255, 255, .07);
+    border-color: rgba(255, 255, 255, .12);
+    color: #F2A4DE;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .16)
 }
 
 body[data-theme="dark"] footer {
@@ -1239,6 +1290,11 @@ body[data-theme="dark"] .is-text code {
         width: 100%;
         justify-content: center;
         padding: 14px 18px
+    }
+
+    .dl-alert {
+        font-size: 12px;
+        padding: 12px 13px
     }
 
     /* FIX: dl-note — removed hacky font-size:0 pseudo-content trick */
