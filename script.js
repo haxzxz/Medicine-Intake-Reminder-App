@@ -80,7 +80,7 @@ function updateDownloadCard() {
         downloadTitle.textContent = 'Android APK File';
         downloadSubtitle.textContent = 'Transfer it to an Android 12+ device to install.';
         downloadButton.textContent = '⬇️ Download APK';
-        setDownloadAlert('Heads up: this is an APK file.', 'It installs on Android devices, not directly on Windows, macOS, or desktop browsers.');
+        setDownloadAlert('Warning: this is an APK file.', 'It installs on Android devices, not directly on Windows, macOS, or desktop browsers.');
         return;
     }
 
