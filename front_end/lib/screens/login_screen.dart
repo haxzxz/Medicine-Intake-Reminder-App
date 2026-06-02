@@ -72,6 +72,10 @@ class _LoginScreenState extends State<LoginScreen>
       _showError('Password must be at least 6 characters.');
       return;
     }
+    if (_creatingAccount && _nameCtrl.text.trim().isEmpty) {
+      _showError('Enter your name for this account.');
+      return;
+    }
 
     setState(() {
       _loadingEmail = true;

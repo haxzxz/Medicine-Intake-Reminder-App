@@ -20,11 +20,8 @@ class BackendService {
   static bool get isConfigured => _baseUrl.isNotEmpty;
 
   static Future<Map<String, String>> _headers() async {
-    final headers = {'Content-Type': 'application/json'};
-    final token = await AuthService.getIdToken();
-    if (token != null && token.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $token';
-    }
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    headers.addAll(await AuthService.authHeaders());
     return headers;
   }
 

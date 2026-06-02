@@ -19,9 +19,9 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     firebase_uid = db.Column(db.String(128), unique=True, nullable=False, index=True)
-    email = db.Column(db.String(255))
-    display_name = db.Column(db.String(255))
-    photo_url = db.Column(db.Text)
+    email = db.Column(db.String(255), nullable=False, default="")
+    display_name = db.Column(db.String(255), nullable=False, default="User")
+    photo_url = db.Column(db.Text, nullable=False, default="")
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(
         db.DateTime(timezone=True),
@@ -224,20 +224,44 @@ def _get_or_create_user(app):
         return _abort_json("Valid Firebase bearer token is required", 401)
 
     firebase_uid = (profile or {}).get("uid") or request.headers.get("X-User-Id") or "dev-user"
-    email = (profile or {}).get("email") or request.headers.get("X-User-Email")
-    display_name = (profile or {}).get("name") or request.headers.get("X-User-Name")
-    photo_url = (profile or {}).get("picture")
+    email = _clean_text((profile or {}).get("email") or request.headers.get("X-User-Email"))
+    display_name = _clean_text(
+        (profile or {}).get("name") or request.headers.get("X-User-Name")
+    )
+    photo_url = _clean_text((profile or {}).get("picture") or request.headers.get("X-User-Photo"))
 
     user = User.query.filter_by(firebase_uid=firebase_uid).first()
     if user is None:
         user = User(firebase_uid=firebase_uid)
         db.session.add(user)
 
-    user.email = email
-    user.display_name = display_name
-    user.photo_url = photo_url
+    if email:
+        user.email = email
+    elif user.email is None:
+        user.email = ""
+
+    if display_name:
+        user.display_name = display_name
+    elif not _clean_text(user.display_name):
+        user.display_name = _display_name_from_email(user.email)
+
+    if photo_url:
+        user.photo_url = photo_url
+    elif user.photo_url is None:
+        user.photo_url = ""
+
     db.session.commit()
     return user
+
+
+def _clean_text(value):
+    text = str(value).strip() if value is not None else ""
+    return text
+
+
+def _display_name_from_email(email):
+    local_part = (email or "").split("@", 1)[0].strip()
+    return local_part or "User"
 
 
 def _bearer_token():

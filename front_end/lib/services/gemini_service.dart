@@ -150,11 +150,8 @@ class GeminiService {
 
   Future<ZamResponse> _doBackendRequest(_QueuedRequest req) async {
     try {
-      final headers = {'Content-Type': 'application/json'};
-      final token = await AuthService.getIdToken();
-      if (token != null && token.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $token';
-      }
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      headers.addAll(await AuthService.authHeaders());
 
       final response = await http
           .post(
