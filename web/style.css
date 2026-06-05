@@ -70,19 +70,27 @@ nav {
     justify-content: space-between;
     width: min(1120px, calc(100% - 32px));
     margin: 16px auto 0;
-    padding: .85rem 1.1rem;
-    background: var(--glass);
-    backdrop-filter: blur(22px) saturate(160%);
-    -webkit-backdrop-filter: blur(22px) saturate(160%);
-    border: 1px solid var(--glass-border);
+    padding: 1rem 1.1rem;
+    background: transparent;
+    border: 1px solid transparent;
     border-radius: 28px;
     position: sticky;
     top: 14px;
     z-index: 100;
-    box-shadow: var(--shadow-soft);
-    transition: background .35s var(--ease-premium), border-color .35s var(--ease-premium), box-shadow .35s var(--ease-premium)
+    box-shadow: none;
+    transition: background .35s var(--ease-premium),
+        border-color .35s var(--ease-premium),
+        box-shadow .35s var(--ease-premium),
+        backdrop-filter .35s var(--ease-premium)
 }
 
+nav.sticky {
+    background: var(--glass);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border-color: var(--glass-border);
+    box-shadow: var(--shadow-soft)
+}
 .nav-logo {
     display: flex;
     align-items: center;
@@ -203,12 +211,13 @@ nav {
 .hero {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    min-height: 85vh;
     gap: 3rem;
     align-items: center;
     max-width: 1100px;
     margin: 0 auto;
     padding: 6.5rem 2.5rem 5rem;
-    position: relative
+    position: relative;
 }
 
 .hero::before {
@@ -326,7 +335,7 @@ h1 span {
     justify-content: center;
     align-items: center;
     position: relative;
-    padding: 20px
+    padding: 20px;
 }
 
 .hero-logo-wrap {
@@ -1168,6 +1177,24 @@ body[data-theme="dark"] .is-text code {
     .reveal {
         opacity: 1;
         transform: none
+    }
+}
+
+@media(min-width: 1024px)
+{
+    .about {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 85vh;
+    }
+
+    .features {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        min-height: 85vh;
     }
 }
 
