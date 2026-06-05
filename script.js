@@ -1,6 +1,6 @@
-
 const themeToggle = document.querySelector('.theme-toggle');
 const themeIcon = document.querySelector('#themeIcon');
+const nav = document.querySelector('nav');
 const btnNav = document.querySelector('.btn-nav');
 const downloadCard = document.querySelector('.dl-card');
 const downloadBadge = document.querySelector('[data-download-badge]');
@@ -11,6 +11,15 @@ const downloadAlert = document.querySelector('[data-download-alert]');
 const downloadAlertTitle = document.querySelector('[data-download-alert-title]');
 const downloadAlertText = document.querySelector('[data-download-alert-text]');
 const downloadButton = document.querySelector('[data-download-button]');
+
+function stickyHeader() {
+    if (!nav) return;
+
+    nav.classList.toggle('sticky', window.scrollY > 0);
+}
+
+stickyHeader();
+window.addEventListener('scroll', stickyHeader, { passive: true });
 
 function setTheme(theme) {
     document.body.dataset.theme = theme;
