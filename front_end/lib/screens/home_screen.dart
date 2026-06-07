@@ -15,6 +15,7 @@ import '../services/reminder_text_parser.dart';
 import '../services/storage_service.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/reminder_card.dart';
+import '../widgets/zam_logo.dart';
 import 'profile_screen.dart';
 import 'reminder_log_screen.dart';
 
@@ -972,21 +973,13 @@ class _HomeScreenState extends State<HomeScreen>
       elevation: 0,
       title: Row(
         children: [
-          // Zam avatar
           Stack(
             children: [
               CircleAvatar(
                 radius: 18,
                 backgroundColor:
-                    const Color(0xFF534AB7).withValues(alpha: 0.15),
-                child: const Text(
-                  'Z',
-                  style: TextStyle(
-                    color: Color(0xFF534AB7),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
+                    Colors.transparent,
+                child: const ZamLogo(size: 36, fontSize: 16),
               ),
               Positioned(
                 right: 0,

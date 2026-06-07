@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../widgets/zam_logo.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -185,26 +186,13 @@ class _LoginScreenState extends State<LoginScreen>
                   children: [
                     const SizedBox(height: 40),
 
-                    // ── Logo & branding ─────────────────────────────────────
                     Container(
                       width: 88,
                       height: 88,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xFF534AB7).withValues(alpha: 0.12),
-                        border: Border.all(
-                          color:
-                              const Color(0xFF534AB7).withValues(alpha: 0.25),
-                          width: 1.5,
-                        ),
+                        color: Colors.transparent,
                       ),
-                      child: const Center(
-                        child: Text('Z',
-                            style: TextStyle(
-                                fontSize: 40,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF534AB7))),
-                      ),
+                      child: const ZamLogo(size: 88, fontSize: 40),
                     ),
                     const SizedBox(height: 20),
                     Text('Zam',
