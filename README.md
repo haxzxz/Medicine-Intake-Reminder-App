@@ -10,10 +10,10 @@ A voice-powered medicine reminder application designed to help users of all ages
 
 ## Table of Contents
 - [How It Works](#how-it-works)
+- [Features](#features)
 - [Meet The Team](#meet-the-team)
 - [Tech Stacks](#tech-stacks)
 - [Project Structure](#project-structure)
-- [Features](#features)
 - [App Development Requisites | Setting Up](#app-development-requisites--setting-up)
   - [Firebase Setup](#1-firebase-setup)
   - [Backend Environment](#2-backend-environment)
