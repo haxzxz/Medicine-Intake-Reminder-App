@@ -51,6 +51,7 @@ A voice-powered medicine reminder application designed to help users of all ages
 ## Meet The Team
 
 | Member | Role |
+| :------: | :----: |
 | Manalo, Zamantha Artlyn O. | Project Manager, Quality Assurance |
 | Librada, Ma. Cathleen O. | UI/UX, Quality Assurance |
 | Ebero, Christian James O. | Fullstack Developer |
