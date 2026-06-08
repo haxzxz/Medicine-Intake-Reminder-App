@@ -42,7 +42,9 @@
   <section class="hero">
     <div>
       <div class="hero-badge">📱 Android App · Free to use</div>
-      <h1>Your voice-powered <span>medicine buddy.</span></h1>
+        <h1>
+          Your voice-powered <span>medicine buddy.</span>
+        </h1>
       <p class="hero-desc">
         <span class="desktop-copy">Zam lets you set medicine reminders just by speaking, view your alarm history, and even ask questions
           about any medication — all in one simple Android app.</span>
@@ -180,6 +182,12 @@
           <div class="dl-title" data-download-title>Android</div>
           <div class="dl-sub" data-download-subtitle>Requires Android 12 or higher</div>
           <div class="dl-size">Version 1.0.0 &nbsp;·&nbsp; ~60 MB &nbsp;·&nbsp; APK file</div>
+          <label class="dl-switch">
+            <!--Invisible Switch for Manual Toast Notif (use for debugging only)-->
+            <input type="checkbox" data-download-update-toggle checked>
+            <span class="dl-switch-ui" aria-hidden="true"></span>
+            <span class="dl-switch-text">Notify users about current link</span>
+          </label>
           <div class="dl-alert" data-download-alert hidden>
             <strong data-download-alert-title></strong>
             <span data-download-alert-text></span>
