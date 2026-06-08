@@ -747,7 +747,7 @@ class _HomeScreenState extends State<HomeScreen>
     _voiceFinalText = '';
     _voicePartialText = '';
     _isStoppingVoice = false;
-    if (send && text.isNotEmpty) {
+    if (send && _hasVoiceContent(text)) {
       await _send(text, false);
     }
   }
@@ -812,6 +812,10 @@ class _HomeScreenState extends State<HomeScreen>
       }
     }
     return '$a $b';
+  }
+
+  bool _hasVoiceContent(String text) {
+    return RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(text);
   }
 
   Future<void> _deleteReminder(Reminder r) async {
@@ -977,8 +981,7 @@ class _HomeScreenState extends State<HomeScreen>
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor:
-                    Colors.transparent,
+                backgroundColor: Colors.transparent,
                 child: const ZamLogo(size: 36, fontSize: 16),
               ),
               Positioned(

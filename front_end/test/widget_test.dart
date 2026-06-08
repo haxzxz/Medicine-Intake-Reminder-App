@@ -18,7 +18,8 @@ void main() {
     expect(next.time.isAfter(DateTime.now()), isTrue);
   });
 
-  test('allergy questions are safety questions, not reminder status questions', () {
+  test('allergy questions are safety questions, not reminder status questions',
+      () {
     const text = "what medicine can i take if i'm having an allergy reaction";
 
     expect(ReminderTextParser.isAllergicReactionQuestion(text), isTrue);
@@ -26,11 +27,13 @@ void main() {
   });
 
   test('allergy safety response includes disclaimer and location caveat', () {
-    final response = ReminderTextParser.allergySafetyResponse(countryCode: 'SG');
+    final response =
+        ReminderTextParser.allergySafetyResponse(countryCode: 'SG');
 
     expect(response, contains('995, based on your device region'));
     expect(response, contains('may or may not work'));
-    expect(response, contains('Zam is for reminder scheduling and convenience only'));
+    expect(response,
+        contains('Zam is for reminder scheduling and convenience only'));
     expect(response, contains('Always consult a healthcare professional'));
   });
 
@@ -53,13 +56,15 @@ void main() {
   });
 
   test('US allergy safety response includes Poison Control', () {
-    final response = ReminderTextParser.allergySafetyResponse(countryCode: 'US');
+    final response =
+        ReminderTextParser.allergySafetyResponse(countryCode: 'US');
 
     expect(response, contains('911, based on your device region'));
     expect(response, contains('1-800-222-1222'));
   });
 
-  test('clock-time reminder text parses one correct medicine name and time', () {
+  test('clock-time reminder text parses one correct medicine name and time',
+      () {
     final parsedTime = ReminderTextParser.clockTimeFromText(
       'remind me at 1:30 a.m to drink paracetamol',
       now: DateTime(2026, 6, 1, 1, 28, 16),
@@ -79,5 +84,16 @@ void main() {
     );
 
     expect(parsedTime, DateTime(2026, 6, 2, 1, 30));
+  });
+
+  test('punctuation-only medicine names fall back to generic medicine', () {
+    expect(ReminderTextParser.cleanMedicineName('.', '.'), 'Medicine');
+    expect(ReminderTextParser.cleanMedicineName(' . ', 'set . for 35s'),
+        'Medicine');
+  });
+
+  test('medicine names trim surrounding punctuation but keep real words', () {
+    expect(ReminderTextParser.cleanMedicineName('paracetamol.', 'paracetamol.'),
+        'Paracetamol');
   });
 }

@@ -16,8 +16,9 @@ class ReminderTextParser {
     final asksMedicine = RegExp(
       r'\b(what|which|any)\s+(medicine|medicines|meds|pill|pills|drug|drugs)\b.*\b(take|use|drink)\b|\b(what|which)\s+.*\b(can|should|do)\s+i\s+(take|use|drink)\b',
     ).hasMatch(normalized);
-    final statesSymptom = RegExp(r"\b(i have|i'm having|i am having|having|got)\b")
-        .hasMatch(normalized);
+    final statesSymptom =
+        RegExp(r"\b(i have|i'm having|i am having|having|got)\b")
+            .hasMatch(normalized);
     return hasSymptom && (asksMedicine || statesSymptom);
   }
 
@@ -49,10 +50,9 @@ class ReminderTextParser {
   }
 
   static String emergencyNumberForRegion([String? countryCode]) {
-    final country = (countryCode ??
-            PlatformDispatcher.instance.locale.countryCode ??
-            '')
-        .toUpperCase();
+    final country =
+        (countryCode ?? PlatformDispatcher.instance.locale.countryCode ?? '')
+            .toUpperCase();
     const emergencyNumbers = {
       'AU': '000',
       'CA': '911',
@@ -79,10 +79,9 @@ class ReminderTextParser {
   }
 
   static String? poisonHelpForRegion([String? countryCode]) {
-    final country = (countryCode ??
-            PlatformDispatcher.instance.locale.countryCode ??
-            '')
-        .toUpperCase();
+    final country =
+        (countryCode ?? PlatformDispatcher.instance.locale.countryCode ?? '')
+            .toUpperCase();
     if (country == 'US') {
       return 'For possible poisoning, overdose, or accidental exposure in the US, Poison Control is 1-800-222-1222.';
     }
@@ -167,8 +166,13 @@ class ReminderTextParser {
           ' ',
         )
         .trim();
+    cleaned = cleaned.replaceAll(
+        RegExp(r'^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$', unicode: true), '');
     cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ');
-    if (cleaned.isEmpty) return 'Medicine';
+    if (cleaned.isEmpty ||
+        !RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(cleaned)) {
+      return 'Medicine';
+    }
     return cleaned
         .split(' ')
         .map((word) => word.isEmpty
