@@ -8,6 +8,25 @@ A voice-powered medicine reminder application designed to help users of all ages
 
 <hr>
 
+## Table of Contents
+- [How It Works](#how-it-works)
+- [Tech Stacks](#tech-stacks)
+- [Project Structure](#project-structure)
+- [Features](#features)
+- [App Development Requisites | Setting Up](#app-development-requisites--setting-up)
+  - [Firebase Setup](#1-firebase-setup)
+  - [Backend Environment](#2-backend-environment)
+  - [Run The Backend Locally](#3-run-the-backend-locally)
+  - [Flutter Environment](#4-flutter-environment)
+  - [Run The Flutter App](#5-run-the-flutter-app)
+  - [Backend API Routes](#6-backend-api-routes)
+  - [Deploy Backend To Render](#7-deploy-backend-to-render)
+  - [Build Android APK](#8-build-android-apk)
+  - [Running on a Physical Android Device (USB)](#running-on-a-physical-android-device-usb)
+  - [Static Download Website](#9-static-download-website)
+- [Troubleshooting](#troubleshooting)
+- [Past Git History with Vulnerabilities(API key exposed, etc.)](#git-history-including-past-commits-with-vulnerabilities)
+
 ## How It Works
 1. <b>Set a Medicine Reminder</b> - The user speaks or types the medicine name and time. The assistant confirms the request and schedules the reminder automatically. Active reminders are displayed on the dashboard. 
 2. <b>Receive Smart Notifications</b> - When it is time to take the medicine, the assistant sends a timely alert. The user can mark the dose as Taken, choose to Snooze the reminder, or mark it as Missed.  
@@ -16,15 +35,336 @@ A voice-powered medicine reminder application designed to help users of all ages
 
 <hr>
 
+## Tech Stacks
+```text
+Mobile app:
+  Flutter          Cross-platform app framework
+  Dart             Main programming language for the Flutter app
+
+Backend:
+  Flask            Python web API framework
+  Python           Backend programming language
+  Gunicorn         Production server for running the Flask API on Render
+
+AI:
+  Google Gemini    AI service used by the app/backend for smart reminder features
+
+Deployment:
+  Render           Hosts/deploys the Flask backend
+  render.yaml      Render deployment blueprint
+  Procfile         Backend start command for hosting
+
+Static website:
+  HTML             Download page structure
+  CSS              Download page styling
+  JavaScript       Download page interactivity
+
+Platform support:
+  Android          Main mobile build target
+  iOS              iPhone/iPad build target
+  Web              Flutter web support plus static APK download site
+  Windows          Flutter desktop support
+  macOS            Flutter desktop support
+  Linux            Flutter desktop support
+
+Build/config tools:
+  Gradle           Android build system
+  CMake            Windows/Linux desktop build configuration
+  Xcode files      iOS/macOS project configuration
+  pubspec.yaml     Flutter/Dart dependency configuration
+  requirements.txt Python dependency configuration
+```
+
 ## Project Structure
 
 ```text
 reminder-app/
-  front_end/        Flutter mobile app
+  .github/          GitHub configuration/workflows folder
+  .venv-con/        Local Python virtual environment folder
   back_end/         Flask API for Gemini, users, reminders, and logs
+    app.py          Main Flask application and API routes
+    config.py       Backend configuration settings
+    requirements.txt Python dependencies for the Flask API
+    Procfile        Process command for deployment hosting
+  front_end/        Flutter mobile app
+    lib/            Main Flutter source code
+      main.dart     Flutter app entry point
+      models/       Reminder and reminder log data models
+      screens/      App screens like home, login, profile, and logs
+      services/     Auth, backend, Gemini, notification, storage, and parser services
+      widgets/      Reusable UI pieces like reminder cards, chat bubbles, and logo
+    assets/         App images and bundled assets
+    android/        Android Flutter project files and native config
+    ios/            iOS Flutter project files and native config
+    web/            Flutter web build/support files
+    windows/        Windows desktop Flutter support files
+    macos/          macOS desktop Flutter support files
+    linux/          Linux desktop Flutter support files
+    test/           Flutter test files
+    pubspec.yaml    Flutter dependencies and asset configuration
+    pubspec.lock    Locked Flutter/Dart dependency versions
+    analysis_options.yaml Dart/Flutter linting rules
+    devtools_options.yaml Flutter DevTools configuration
   web/              Static APK download website
+    index.html      Download page HTML
+    style.css       Website styling
+    script.js       Website behavior
+    icon.png        Website/app icon image
+    README.md       Notes for the static web page
+  .gitignore        Files and folders Git should ignore
+  README.md         Main project documentation
   render.yaml       Render deployment blueprint for the Flask API
 ```
+
+<details>
+  <summary>View the Full Explanation of Project Structure &#91;Warning It's VERY LOOONGGG&#93; </summary>
+
+```text
+  reminder-app/
+  .github/          GitHub configuration/workflows folder
+  .venv-con/        Local Python virtual environment folder
+  back_end/         Flask API for Gemini, users, reminders, and logs
+    app.py          Main Flask application and API routes
+    config.py       Backend configuration settings
+    Procfile        Process command for deployment hosting
+    requirements.txt Python dependencies for the Flask API
+  front_end/        Flutter mobile app
+    analysis_options.yaml Dart/Flutter linting rules
+    devtools_options.yaml Flutter DevTools configuration
+    pubspec.lock    Locked Flutter/Dart dependency versions
+    pubspec.yaml    Flutter dependencies, app metadata, and assets
+    assets/
+      images/
+        zam-logo.png App logo image
+    lib/
+      main.dart     Flutter app entry point
+      models/
+        reminder.dart Reminder data model
+        reminder_log.dart Reminder log/history data model
+      screens/
+        home_screen.dart Main reminders/chat screen
+        login_screen.dart Login/authentication screen
+        profile_screen.dart User profile screen
+        reminder_log_screen.dart Reminder log/history screen
+      services/
+        auth_service.dart Authentication logic
+        backend_service.dart Flask backend API client
+        gemini_service.dart Gemini AI service client
+        notification_service.dart Local notification scheduling
+        reminder_text_parser.dart Reminder text parsing logic
+        storage_service.dart Local storage/persistence logic
+      widgets/
+        api_key_dialog.dart API key input dialog
+        chat_bubble.dart Chat message bubble UI
+        reminder_card.dart Reminder card UI
+        zam_logo.dart App logo widget
+    test/
+      widget_test.dart Flutter widget test
+    android/
+      build.gradle Android build configuration
+      build.gradle.kts Android Kotlin build configuration
+      gradle.properties Gradle settings
+      settings.gradle Android project settings
+      settings.gradle.kts Android Kotlin project settings
+      app/
+        build.gradle Android app build configuration
+        build.gradle.kts Android app Kotlin build configuration
+        google-services.json Firebase/Google services config
+        src/
+          debug/
+            AndroidManifest.xml Debug Android manifest
+          main/
+            AndroidManifest.xml Main Android manifest
+            kotlin/
+              com/
+                example/
+                  zam_medicine_reminder/
+                    MainActivity.kt Android native entry point
+            res/
+              drawable/
+                launch_background.xml Android launch background
+              drawable-v21/
+                launch_background.xml Android launch background for newer devices
+              mipmap-hdpi/
+                ic_launcher.png Default app launcher icon
+                launcher_icon.png Custom app launcher icon
+              mipmap-mdpi/
+                ic_launcher.png Default app launcher icon
+                launcher_icon.png Custom app launcher icon
+              mipmap-xhdpi/
+                ic_launcher.png Default app launcher icon
+                launcher_icon.png Custom app launcher icon
+              mipmap-xxhdpi/
+                ic_launcher.png Default app launcher icon
+                launcher_icon.png Custom app launcher icon
+              mipmap-xxxhdpi/
+                ic_launcher.png Default app launcher icon
+                launcher_icon.png Custom app launcher icon
+              values/
+                styles.xml Android style definitions
+              values-night/
+                styles.xml Android dark-mode style definitions
+          profile/
+            AndroidManifest.xml Profile Android manifest
+      gradle/
+        wrapper/
+          gradle-wrapper.properties Gradle wrapper configuration
+    ios/
+      Flutter/
+        AppFrameworkInfo.plist Flutter iOS framework metadata
+        Debug.xcconfig iOS debug build settings
+        Release.xcconfig iOS release build settings
+      Runner/
+        AppDelegate.swift iOS app delegate
+        Info.plist iOS app metadata/settings
+        Runner-Bridging-Header.h Swift/Objective-C bridge header
+        SceneDelegate.swift iOS scene delegate
+        Assets.xcassets/
+          AppIcon.appiconset/
+            Contents.json App icon asset metadata
+            Icon-App-20x20@1x.png iOS app icon
+            Icon-App-20x20@2x.png iOS app icon
+            Icon-App-20x20@3x.png iOS app icon
+            Icon-App-29x29@1x.png iOS app icon
+            Icon-App-29x29@2x.png iOS app icon
+            Icon-App-29x29@3x.png iOS app icon
+            Icon-App-40x40@1x.png iOS app icon
+            Icon-App-40x40@2x.png iOS app icon
+            Icon-App-40x40@3x.png iOS app icon
+            Icon-App-50x50@1x.png iOS app icon
+            Icon-App-50x50@2x.png iOS app icon
+            Icon-App-57x57@1x.png iOS app icon
+            Icon-App-57x57@2x.png iOS app icon
+            Icon-App-60x60@2x.png iOS app icon
+            Icon-App-60x60@3x.png iOS app icon
+            Icon-App-72x72@1x.png iOS app icon
+            Icon-App-72x72@2x.png iOS app icon
+            Icon-App-76x76@1x.png iOS app icon
+            Icon-App-76x76@2x.png iOS app icon
+            Icon-App-83.5x83.5@2x.png iOS app icon
+            Icon-App-1024x1024@1x.png App Store icon
+          LaunchImage.imageset/
+            Contents.json Launch image metadata
+            LaunchImage.png iOS launch image
+            LaunchImage@2x.png iOS launch image
+            LaunchImage@3x.png iOS launch image
+            README.md Launch image notes
+        Base.lproj/
+          LaunchScreen.storyboard iOS launch screen layout
+          Main.storyboard iOS main storyboard
+      Runner.xcodeproj/
+        project.pbxproj Xcode project definition
+        project.xcworkspace/
+          contents.xcworkspacedata Xcode workspace data
+          xcshareddata/
+            IDEWorkspaceChecks.plist Xcode workspace check settings
+            WorkspaceSettings.xcsettings Xcode workspace settings
+        xcshareddata/
+          xcschemes/
+            Runner.xcscheme Xcode build/run scheme
+      Runner.xcworkspace/
+        contents.xcworkspacedata Xcode workspace data
+        xcshareddata/
+          IDEWorkspaceChecks.plist Xcode workspace check settings
+          WorkspaceSettings.xcsettings Xcode workspace settings
+      RunnerTests/
+        RunnerTests.swift iOS test file
+    macos/
+      Flutter/
+        Flutter-Debug.xcconfig macOS debug Flutter build settings
+        Flutter-Release.xcconfig macOS release Flutter build settings
+        GeneratedPluginRegistrant.swift macOS generated plugin registration
+      Runner/
+        AppDelegate.swift macOS app delegate
+        DebugProfile.entitlements macOS debug/profile permissions
+        Info.plist macOS app metadata/settings
+        MainFlutterWindow.swift macOS main Flutter window
+        Release.entitlements macOS release permissions
+        Assets.xcassets/
+          AppIcon.appiconset/
+            app_icon_16.png macOS app icon
+            app_icon_32.png macOS app icon
+            app_icon_64.png macOS app icon
+            app_icon_128.png macOS app icon
+            app_icon_256.png macOS app icon
+            app_icon_512.png macOS app icon
+            app_icon_1024.png macOS app icon
+            Contents.json macOS app icon metadata
+        Base.lproj/
+          MainMenu.xib macOS main menu layout
+        Configs/
+          AppInfo.xcconfig macOS app info settings
+          Debug.xcconfig macOS debug build settings
+          Release.xcconfig macOS release build settings
+          Warnings.xcconfig macOS warning settings
+      Runner.xcodeproj/
+        project.pbxproj Xcode project definition
+        project.xcworkspace/
+          xcshareddata/
+            IDEWorkspaceChecks.plist Xcode workspace check settings
+        xcshareddata/
+          xcschemes/
+            Runner.xcscheme Xcode build/run scheme
+      Runner.xcworkspace/
+        contents.xcworkspacedata Xcode workspace data
+        xcshareddata/
+          IDEWorkspaceChecks.plist Xcode workspace check settings
+      RunnerTests/
+        RunnerTests.swift macOS test file
+    linux/
+      CMakeLists.txt Linux build configuration
+      flutter/
+        CMakeLists.txt Linux Flutter build configuration
+        generated_plugin_registrant.cc Generated plugin registration source
+        generated_plugin_registrant.h Generated plugin registration header
+        generated_plugins.cmake Generated plugin CMake config
+      runner/
+        CMakeLists.txt Linux runner build configuration
+        main.cc Linux app entry point
+        my_application.cc Linux app implementation
+        my_application.h Linux app header
+    windows/
+      CMakeLists.txt Windows build configuration
+      flutter/
+        CMakeLists.txt Windows Flutter build configuration
+        generated_plugin_registrant.cc Generated plugin registration source
+        generated_plugin_registrant.h Generated plugin registration header
+        generated_plugins.cmake Generated plugin CMake config
+      runner/
+        CMakeLists.txt Windows runner build configuration
+        flutter_window.cpp Windows Flutter window implementation
+        flutter_window.h Windows Flutter window header
+        main.cpp Windows app entry point
+        resource.h Windows resource header
+        Runner.rc Windows app resource file
+        runner.exe.manifest Windows executable manifest
+        utils.cpp Windows utility functions
+        utils.h Windows utility headers
+        win32_window.cpp Win32 window implementation
+        win32_window.h Win32 window header
+        resources/
+          app_icon.ico Windows app icon
+    web/
+      favicon.png Flutter web favicon
+      index.html Flutter web shell page
+      manifest.json Flutter web app manifest
+      icons/
+        Icon-192.png Web app icon
+        Icon-512.png Web app icon
+        Icon-maskable-192.png Maskable web app icon
+        Icon-maskable-512.png Maskable web app icon
+  web/  Static APK download website
+    icon.png    Website/app icon image
+    index.html  Download page HTML
+    README.md   Notes for the static web page
+    script.js   Website behavior
+    style.css   Website styling
+  .gitignore    Files and folders Git should ignore
+  README.md     Main project documentation
+  render.yaml   Render deployment blueprint for the Flask API
+```
+
+</details>
 
 <hr>
 
@@ -309,7 +649,7 @@ flutter pub get
 flutter run -d <YOUR_DEVICE_SERIAL_NUMBER>
 ```
 
-## 9. Static Download Website
+### 9. Static Download Website
 
 The `web/` folder is for a simple website that lets users download the APK.
 
