@@ -24,6 +24,7 @@ class ReminderTextParser {
 
   static bool isReminderStatusQuestion(String text) {
     final normalized = text.toLowerCase();
+    if (isDeleteAllReminderRequest(text)) return false;
     if (RegExp(
       r'\b(what|which)\s+(medicine|medicines|meds|pill|pills)\s+(can|should|do)\s+i\s+take\b',
     ).hasMatch(normalized)) {
@@ -35,6 +36,13 @@ class ReminderTextParser {
         RegExp(r'\b(my|active|upcoming)\s+(reminder|reminders|meds|medicine|medicines)\b')
             .hasMatch(normalized) ||
         normalized.contains('what do i have set');
+  }
+
+  static bool isDeleteAllReminderRequest(String text) {
+    final normalized = text.toLowerCase();
+    return RegExp(
+      r'\b(delete|remove|clear|cancel)\b.*\b(all|every|everything)\b.*\b(reminder|reminders|meds|medicine|medicines|pills)\b',
+    ).hasMatch(normalized);
   }
 
   static String allergySafetyResponse({String? countryCode}) {

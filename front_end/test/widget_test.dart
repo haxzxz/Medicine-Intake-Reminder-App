@@ -96,4 +96,11 @@ void main() {
     expect(ReminderTextParser.cleanMedicineName('paracetamol.', 'paracetamol.'),
         'Paracetamol');
   });
+
+  test('delete all reminders request is detected before status listing', () {
+    const text = 'delete all my reminders';
+
+    expect(ReminderTextParser.isDeleteAllReminderRequest(text), isTrue);
+    expect(ReminderTextParser.isReminderStatusQuestion(text), isFalse);
+  });
 }

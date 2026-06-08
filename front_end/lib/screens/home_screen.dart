@@ -292,6 +292,11 @@ class _HomeScreenState extends State<HomeScreen>
       return;
     }
 
+    if (_isDeleteAllReminderRequest(text)) {
+      await _deleteAllReminders();
+      return;
+    }
+
     if (_isReminderStatusQuestion(text)) {
       _addBotMessage(_activeReminderSummary());
       return;
@@ -327,15 +332,7 @@ class _HomeScreenState extends State<HomeScreen>
         );
       }
     } else if (res.action == 'delete_all') {
-      // Log deleted reminders before clearing
-      for (final r in _reminders) {
-        await _logReminder(r, 'deleted');
-      }
-      await NotificationService.cancelAll();
-      _reminders.clear();
-      await StorageService.clearReminders();
-      unawaited(BackendService.deleteAllReminders());
-      _gemini.clearHistory();
+      await _deleteAllReminders(sendMessage: false);
     }
 
     _safeSetState(() => _isLoading = false);
@@ -432,6 +429,10 @@ class _HomeScreenState extends State<HomeScreen>
 
   bool _isReminderStatusQuestion(String text) {
     return ReminderTextParser.isReminderStatusQuestion(text);
+  }
+
+  bool _isDeleteAllReminderRequest(String text) {
+    return ReminderTextParser.isDeleteAllReminderRequest(text);
   }
 
   bool _isUnrelatedQuestion(String text) {
@@ -851,6 +852,22 @@ class _HomeScreenState extends State<HomeScreen>
     unawaited(BackendService.deleteReminder(r.id));
     _gemini.clearHistory();
     if (showMessage) _addBotMessage('Deleted ${r.medicineName}.');
+  }
+
+  Future<void> _deleteAllReminders({bool sendMessage = true}) async {
+    if (_reminders.isEmpty) {
+      if (sendMessage) _addBotMessage('No active reminders to delete.');
+      return;
+    }
+    for (final r in _reminders) {
+      await _logReminder(r, 'deleted');
+    }
+    await NotificationService.cancelAll();
+    _reminders.clear();
+    await StorageService.clearReminders();
+    unawaited(BackendService.deleteAllReminders());
+    _gemini.clearHistory();
+    if (sendMessage) _addBotMessage('Deleted all reminders.');
   }
 
   @override
