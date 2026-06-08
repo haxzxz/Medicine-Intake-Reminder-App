@@ -10,6 +10,7 @@ A voice-powered medicine reminder application designed to help users of all ages
 
 ## Table of Contents
 - [How It Works](#how-it-works)
+- [Meet The Team](#meet-the-team)
 - [Tech Stacks](#tech-stacks)
 - [Project Structure](#project-structure)
 - [Features](#features)
@@ -31,7 +32,28 @@ A voice-powered medicine reminder application designed to help users of all ages
 1. <b>Set a Medicine Reminder</b> - The user speaks or types the medicine name and time. The assistant confirms the request and schedules the reminder automatically. Active reminders are displayed on the dashboard. 
 2. <b>Receive Smart Notifications</b> - When it is time to take the medicine, the assistant sends a timely alert. The user can mark the dose as Taken, choose to Snooze the reminder, or mark it as Missed.  
 3. <b>View Medicine Information</b> - The assistant provides basic details about medicines, including their purpose and usage, whenever the user asks. This helps the user understand what they are taking. 
-4. <b>Track Logs and History</b> -  All completed or missed doses are recorded in the Logs section. The user can review their intake history at any time to monitor consistency. 
+4. <b>Track Logs and History</b> -  All completed or missed doses are recorded in the Logs section. The user can review their intake history at any time to monitor consistency.
+
+<hr>
+
+## Features
+
+- <b>Bi-Lingual Support</b>: Support Both English and Filipino Language.
+- <b>Voice Reminders</b>: Set and manage medication schedules hands-free using voice commands. 
+- <b>AI Chat</b>: Chat naturally to log medications, automate recurring alarms, and get intake summaries.
+- <b>Smart Notifications</b>: Timely, reliable alerts so you never miss a dose. 
+- <b>Medicine Information</b>: Quick in-app lookups for drug uses, dosages, and safety precautions. 
+- <b>Logs & History</b>: Track upcoming alarms, taken doses, and missed schedules in one list. 
+- <b>Data Privacy</b>: Secure handling and encryption of your personal medication data. 
+
+<hr>
+
+## Meet The Team
+
+| Member | Role |
+| Manalo, Zamantha Artlyn O. | Project Manager, Quality Assurance |
+| Librada, Ma. Cathleen O. | UI/UX, Quality Assurance |
+| Ebero, Christian James O. | Fullstack Developer |
 
 <hr>
 
@@ -74,6 +96,8 @@ Build/config tools:
   pubspec.yaml     Flutter/Dart dependency configuration
   requirements.txt Python dependency configuration
 ```
+
+<hr>
 
 ## Project Structure
 
@@ -365,17 +389,6 @@ reminder-app/
 ```
 
 </details>
-
-<hr>
-
-## Features
-
-- <b>Voice Reminders</b>: Set and manage medication schedules hands-free using voice commands. 
-- <b>AI Chat</b>: Chat naturally to log medications, automate recurring alarms, and get intake summaries.
-- <b>Smart Notifications</b>: Timely, reliable alerts so you never miss a dose. 
-- <b>Medicine Information</b>: Quick in-app lookups for drug uses, dosages, and safety precautions. 
-- <b>Logs & History</b>: Track upcoming alarms, taken doses, and missed schedules in one list. 
-- <b>Data Privacy</b>: Secure handling and encryption of your personal medication data. 
 
 <hr>
 
