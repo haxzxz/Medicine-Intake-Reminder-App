@@ -11,6 +11,10 @@ const downloadAlert = document.querySelector('[data-download-alert]');
 const downloadAlertTitle = document.querySelector('[data-download-alert-title]');
 const downloadAlertText = document.querySelector('[data-download-alert-text]');
 const downloadButton = document.querySelector('[data-download-button]');
+const downloadUpdateToggle = document.querySelector('[data-download-update-toggle]');
+const DOWNLOAD_LINK_STORAGE_KEY = 'zam-download-link';
+const DOWNLOAD_FORCE_NOTICE_KEY = 'zam-download-force-notice';
+let downloadToastTimer;
 
 function stickyHeader() {
     if (!nav) return;
@@ -63,6 +67,41 @@ function setDownloadAlert(title, text) {
     downloadAlert.hidden = false;
 }
 
+function showDownloadToast(message = 'The APK download link was updated.') {
+    if (!downloadButton) return;
+
+    const existingToast = document.querySelector('.download-toast');
+    if (existingToast) existingToast.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'download-toast';
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
+    toast.innerHTML = `<strong>New App Update</strong><span>${message}</span>`;
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => toast.classList.add('is-visible'));
+    clearTimeout(downloadToastTimer);
+    downloadToastTimer = setTimeout(() => {
+        toast.classList.remove('is-visible');
+        toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+    }, 5200);
+}
+
+function notifyDownloadLinkUpdate() {
+    if (!downloadButton) return;
+
+    const currentLink = downloadButton.href;
+    const previousLink = localStorage.getItem(DOWNLOAD_LINK_STORAGE_KEY);
+    const forceNotice = localStorage.getItem(DOWNLOAD_FORCE_NOTICE_KEY) === currentLink;
+    const toggleNotice = downloadUpdateToggle && downloadUpdateToggle.checked;
+    localStorage.setItem(DOWNLOAD_LINK_STORAGE_KEY, currentLink);
+
+    if (forceNotice || toggleNotice || (previousLink && previousLink !== currentLink)) {
+        showDownloadToast(forceNotice || toggleNotice ? 'This is the current APK download link.' : undefined);
+    }
+}
+
 function updateDownloadCard() {
     if (!downloadCard || !downloadButton) return;
 
@@ -101,6 +140,23 @@ function updateDownloadCard() {
 }
 
 updateDownloadCard();
+notifyDownloadLinkUpdate();
+
+if (downloadUpdateToggle) {
+    downloadUpdateToggle.checked = localStorage.getItem(DOWNLOAD_FORCE_NOTICE_KEY) === downloadButton.href || downloadUpdateToggle.checked;
+
+    downloadUpdateToggle.addEventListener('change', () => {
+        if (!downloadButton) return;
+
+        if (downloadUpdateToggle.checked) {
+            localStorage.setItem(DOWNLOAD_FORCE_NOTICE_KEY, downloadButton.href);
+            showDownloadToast('This is the current APK download link.');
+            return;
+        }
+
+        localStorage.removeItem(DOWNLOAD_FORCE_NOTICE_KEY);
+    });
+}
 
 themeToggle.addEventListener('click', () => {
     themeToggle.classList.remove('spin');
