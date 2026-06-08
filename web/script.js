@@ -73,19 +73,27 @@ function showDownloadToast(message = 'The APK download link was updated.') {
     const existingToast = document.querySelector('.download-toast');
     if (existingToast) existingToast.remove();
 
-    const toast = document.createElement('div');
+    const toast = document.createElement('a');
     toast.className = 'download-toast';
+    toast.href = '#download';
     toast.setAttribute('role', 'status');
     toast.setAttribute('aria-live', 'polite');
+    toast.setAttribute('aria-label', 'Go to download section');
     toast.innerHTML = `<strong>New App Update</strong><span>${message}</span>`;
     document.body.appendChild(toast);
+
+    toast.addEventListener('click', () => {
+        clearTimeout(downloadToastTimer);
+        toast.classList.remove('is-visible');
+        toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+    });
 
     requestAnimationFrame(() => toast.classList.add('is-visible'));
     clearTimeout(downloadToastTimer);
     downloadToastTimer = setTimeout(() => {
         toast.classList.remove('is-visible');
         toast.addEventListener('transitionend', () => toast.remove(), { once: true });
-    }, 5200);
+    }, 5267);
 }
 
 function notifyDownloadLinkUpdate() {
