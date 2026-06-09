@@ -6,6 +6,8 @@
 
 A voice-powered medicine reminder application designed to help users of all ages manage their medication schedules with ease. By combining smart reminders, voice commands, and medicine information, the app ensures that users never miss a dose. It also maintains logs and a history for better tracking, making it especially useful.  
 
+<a href= "https://stats.uptimerobot.com/lxJ5ysMez1">Check Backend <i>(Render)</i> Status</a>
+
 <hr>
 
 ## Table of Contents
